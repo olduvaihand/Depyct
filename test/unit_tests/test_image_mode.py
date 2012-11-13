@@ -12,7 +12,7 @@ from depyct.image_mode import (ImageMode, MODES, L,
 )
 
 
-class TestImageMode(DepyctUnitTest):
+class ImageModeTest(DepyctUnitTest):
 
     @classmethod
     def setUpClass(cls):
