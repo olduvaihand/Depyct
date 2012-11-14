@@ -15,7 +15,15 @@ __all__ = ["ImageSize", "ImageMixin", "Image"]
 
 
 class ImageSize(namedtuple("_ImageSize", "width height")):
-    """
+    """ImageSize is a helper class that represents the 2-dimensional size
+    of an image.  Generally, it isn't necessary for a user to create
+    ImageSize objects, as they are automatically generated on initialization
+    of an :class:`~image.Image` object and cannot be modified once set.
+
+    :param width: An integral value or an object that supports an
+        __index__ method.
+    :param height: An integral value or an object that supports an
+        __index__ method.
 
     """
 
