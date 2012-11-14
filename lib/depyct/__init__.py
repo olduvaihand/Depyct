@@ -3,9 +3,10 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
+"""
 
-__version__ = "0.0.1a1"
-
+"""
 from image_mode import *
 
+__version__ = "0.0.1a1"
 __all__ = image_mode.__all__

@@ -3,7 +3,6 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
-
 from depyct.testing import DepyctUnitTest
 from depyct.image_mode import (ImageMode, MODES, L,
     L16, L32, LA, LA32, L16F, L32F, L64F, LA32F, RGB, RGB48, RGBA, RGBA64,

@@ -3,7 +3,9 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
+"""
 
+"""
 from unittest import TestCase
 
 

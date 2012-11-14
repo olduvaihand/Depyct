@@ -4,8 +4,8 @@
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
 """
-"""
 
+"""
 import sys
 
 py27 = sys.version_info == (2, 7)
