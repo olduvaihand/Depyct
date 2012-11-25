@@ -87,8 +87,8 @@ class ImageMode(str):
     @property
     def bytes_per_pixel(self):
         if self.planar:
-            raise AttributeError("'{}' object has no attribute "
-                    "'bytes_per_pixel'".format(type(self)))
+            raise TypeError("Planar image modes do not support "
+                            "bytes_per_pixel.")
         return self.components * self.bits_per_component // 8
 
     def get_length(self, dims):

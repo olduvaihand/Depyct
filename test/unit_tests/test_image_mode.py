@@ -58,9 +58,9 @@ class ImageModeTest(DepyctUnitTest):
         for mode, bytes_per_pixel in self.bytes_per_pixel.items():
             self.assertEquals(mode.bytes_per_pixel, bytes_per_pixel)
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(TypeError):
             YV12.bytes_per_pixel
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(TypeError):
             JPEG_YV12.bytes_per_pixel
 
     def test_get_length(self):
