@@ -270,8 +270,8 @@ class FormatBase(object):
         """File extensions associated with the format.
 
         """
-        raise NotImplemented("{}.{} is not yet implemented".format(
-            self.__class__.__name__, "extensions"))
+        raise NotImplementedError("{}.{} is not yet implemented".format(
+                                  self.__class__.__name__, "extensions"))
 
     @abstractmethod
     def open(self, filename, **options):
@@ -281,8 +281,8 @@ class FormatBase(object):
         :rtype: :class:`~pyitk.pep368.ImageMixin`
 
         """
-        raise NotImplemented("{}.{} is not yet implemented".format(
-            self.__class__.__name__, "load"))
+        raise NotImplementedError("{}.{} is not yet implemented".format(
+                                  self.__class__.__name__, "load"))
 
     @abstractmethod
     def save(self, image, filename, **options):
@@ -293,5 +293,5 @@ class FormatBase(object):
         :rtype: None
 
         """
-        raise NotImplemented("{}.{} is not yet implemented".format(
-            self.__class__.__name__, "save"))
+        raise NotImplementedError("{}.{} is not yet implemented".format(
+                                  self.__class__.__name__, "save"))

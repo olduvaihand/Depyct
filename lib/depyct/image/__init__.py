@@ -141,8 +141,8 @@ class ImageMixin(object):
         """
         new_height, new_width = self.size
         if self.planar:
-            raise NotImplemented("rotate90() is not implemented for planar "
-                                 "images.")
+            raise NotImplementedError("rotate90() is not implemented for "
+                                      "planar images.")
         else:
             res = Image(self.mode, size=(new_width, new_height))
             for x, line in enumerate(self):
@@ -155,8 +155,8 @@ class ImageMixin(object):
         
         """
         if self.planar:
-            raise NotImplemented("rotate180() is not implemented for planar "
-                                 "images.")
+            raise NotImplementedError("rotate180() is not implemented for "
+                                      "planar images.")
         else:
             return self[::-1, ::-1]
         
@@ -166,8 +166,8 @@ class ImageMixin(object):
         """
         new_height, new_width = self.size
         if self.planar:
-            raise NotImplemented("rotate270() is not implemented for planar "
-                                 "images.")
+            raise NotImplementedError("rotate270() is not implemented for "
+                                      "planar images.")
         else:
             res = Image(self.mode, size=(new_width, new_height))
             for x, line in enumerate(self):
@@ -194,7 +194,7 @@ class ImageMixin(object):
         individual components.
 
         """
-        raise NotImplemented("split() is not yet implemented.")
+        raise NotImplementedError("split() is not yet implemented.")
         if self.planar:
             pass
         else:
