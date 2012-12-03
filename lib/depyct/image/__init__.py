@@ -229,6 +229,13 @@ class ImageMixin(object):
             raise TypeError("Planar images do not have a length.")
         return self.size.height
 
+    # FIXME:
+    # Planar images must include component images accessible via
+    # component names.  These images are single component images
+    # whose buffers are the regions of the main image buffer corresponding
+    # to their respective components.  (I.e. changes made to the component
+    # images will be immediately reflected in the parent image and vice versa)
+
     def __getitem__(self, key):
         """__getitem__(self, integer) -> line
         __getitem__(self, tuple[integer]) -> pixel
@@ -335,38 +342,86 @@ class Image(ImageMixin):
     """
 
     def __init__(self, mode=None, size=None, color=None, source=None):
+        """
+        ``mode`` must be one of the constants in the ``MODES`` set,
 
-        if isinstance(source, ImageMixin):
-            # if mode is None:
-            #     mode = source.mode
-            # if size is None:
-            #     size = source.size
-            # 
-            # 
-            # 
-
-            pass
-
-        if source is not None and color is not None:
-            raise ValueError("source and color cannot be specified "
-                             "simultaneously.")
-
-        if mode is not None and mode not in MODES:
-            raise ValueError("{} is not a valid mode.".format(mode))
-
-        self.mode = mode
-        self._size = ImageSize(*size)
-        self.color = color
+        ``size`` is a sequence of two integers (width and height of the new image);
+        
+        ``color`` is a sequence of integers, one for each
+        component of the image, used to initialize all the pixels to the
+        same value;
+        
+        ``source`` can be a sequence of integers of the appropriate size and format
+        that is copied as-is in the buffer of the new image or an existing image;
+        
+        in Python 2.x ``source`` can also be an instance of ``str`` and is interpreted
+        as a sequence of bytes.
+        
+        ``color`` and ``source`` are mutually exclusive and if
+        they are both omitted the image is initialized to transparent
+        black (all the bytes in the buffer have value 16 in the ``YV12``
+        mode, 255 in the ``CMYK*`` modes and 0 for everything else). 
+        
+        If ``source`` is present and is an image, ``mode`` and/or ``size``
+        can be omitted; if they are specified and are different from the
+        source mode and/or size, the source image is converted.
+        """
+        self._mode = None
+        self._size = None
+        self._buffer = None
         self.info = {}
-        self.buffer = None
+
+        if mode is not None:
+            if mode not in MODES:
+                raise ValueError("{} is not a valid mode.".format(mode))
+            self._mode = mode
+
+        if size is not None:
+            try:
+                self._size = ImageSize(*size)
+            except:
+                raise ValueError("size must be an iterable returning 2 "
+                                 "elements, not {}".format(size))
+
+        if source:
+            if color:
+                # issue warning that color will be ignored
+                pass
+            if isinstance(source, ImageMixin):
+                if size is None:
+                    self._size = source.size
+                    # initialize the buffer
+                else:
+                    # deal with resizing
+                if mode is None:
+                    self._mode = source.mode
+                else:
+                    # deal with converting color
+            else:
+                # source had better be an iterable that we can stuff 
+                #into a buffer
+                pass
+        elif size and mode:
+            color = tuple(color or mode.transparent_color)
+            assert len(color) == self.components
+            # initialize buffer to the correct size and color
+        else:
+            raise ValueError("You must minimally specify a source from "
+                             "which to build the image or a mode and size "
+                             "with which to initialize the buffer.")
+
         # assert self.size.width % self.mode.x_divisor == 0
         # assert self.size.height % self.mode.y_divisor == 0
         # buffer_size = mode.get_length(self.size)
 
-    @property
+    @util.readonly_property
+    def buffer(self):
+        return self._buffer
+
+    @util.readonly_property
     def size(self):
         return self._size
 
-    @size.setter
-    def size(self):
-        raise TypeError("size is a read-only value.")
+    @util.readonly_property
+    def mode(self):
+        return self._mode
