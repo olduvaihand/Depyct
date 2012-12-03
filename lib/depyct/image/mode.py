@@ -21,7 +21,7 @@ class ImageMode(str):
         A :class:`tuple` of strings containing the names of each component.
 
     :attr:`.bits_per_component`
-        8, 16, or 32.
+        8, 16, 32, or 64.
 
     :attr:`.bytes_per_pixel`
         ``components * bits_per_component // 8``, only available for non planar
@@ -69,8 +69,7 @@ class ImageMode(str):
 
     def _create_pixel_cls(self):
         from .pixel import pixel_maker
-        # this needs to be updated to deal with any mode that does not deal
-        # with byte-sized components
+        # update this to deal with half-floats
         self.pixel_cls = pixel_maker(self)
 
     @property
@@ -115,7 +114,7 @@ class ImageMode(str):
             return reduce(operator.mul, dims)*self.bytes_per_pixel
 
     @classmethod
-    def _set_mode_names(cls):
+    def _finalize_modes(cls):
         """Link modes to their module-level names for string comparison.
         
         Once all :class:`ImageMode` s have been instantiated, they must be
@@ -176,7 +175,7 @@ HSL192 = ImageMode("hsl", 64, intervals=((0., 360.), (0., 1.), (0., 1.)))
 CMYK = ImageMode("cmyk")
 CMYK64 = ImageMode("cmyk", 16)
 
-MODES = ImageMode._set_mode_names()
+MODES = ImageMode._finalize_modes()
 
 __all__ = ["MODES"] + [name for name, value in globals().items() 
                        if isinstance(value, ImageMode)]
