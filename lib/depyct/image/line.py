@@ -16,7 +16,7 @@ class Line(object):
     def __init__(self, mode, buffer):
         self.mode = mode
         self.buffer = buffer
-        self.width = len(self.buffer) // self.mode.bytes_per_pixel
+        self._length = len(self.buffer) // self.mode.bytes_per_pixel
 
     def __str__(self):
         return "<{}: {}>".format(self.__class__.__name__,
@@ -30,7 +30,7 @@ class Line(object):
                                tuple(p.value for p in self))
 
     def __len__(self):
-        return self.width
+        return self._length
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -38,8 +38,11 @@ class Line(object):
             end = start + self.mode.bytes_per_pixel
             return self.mode.pixel_cls(self.buffer[start:end])
         elif isinstance(key, slice):
-            p_start, p_stop, p_step = key.indices(self.width)
+            p_start, p_stop, p_step = key.indices(len(self))
             width = len(range(p_start, p_stop, p_step))
+            # FIXME: here's that circular dependency again. 
+            # it might be preferable to make this something that's configurable
+            # maybe a call to a registry to get the current image class?
             res = Image(self.mode, size=(width, 1))
             for i, pixel in enumerate(range(p_start, p_stop, p_step)):
                 res[i, 0].value = self[pixel].value
@@ -51,7 +54,7 @@ class Line(object):
         if isinstance(key, int):
             self[key].value = value
         elif isinstance(key, slice):
-            p_start, p_stop, p_step = key.indices(self.width)
+            p_start, p_stop, p_step = key.indices(len(self))
             offsets = len(range(p_start, p_stop, p_step))
             assert len(value) == offsets
             for i, pixel in zip(range(p_start, p_stop, p_step), value):
