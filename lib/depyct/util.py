@@ -9,8 +9,8 @@
 import array
 import sys
 
-py27 = sys.version_info == (2, 7)
 py3k = sys.version_info >= (3, 0)
+py27 = sys.version_info >= (2, 7) and not py3k
 jython = sys.platform.startswith("java")
 pypy = sys.platform.startswith("pypy")
 
@@ -37,8 +37,8 @@ def initialize_buffer(mode, size, color=None):
     if color is None:
         color = mode.transparent_color
     s = mode.pixel_cls.value.pack(*color)
-    initial_value = s * (mode.get_length(size) // 8)
+    initial_value = s * size[0] * size[1]
     if py27:
-        return bytearray(initial_value)
+        return memoryview(bytearray(initial_value))
     else:
-        return array.array("B", initial_value)
+        return memoryview(array.array("B", initial_value))
