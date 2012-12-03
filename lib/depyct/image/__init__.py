@@ -8,16 +8,17 @@
 from collections import namedtuple
 from operator import index
 from struct import Struct
+import warnings
 
 from .mode import *
 from .line import Line
-from .. import util
+from depyct import util
 
 
 __all__ = ["ImageSize", "ImageMixin", "Image"]
 
 
-class ImageSize(namedtuple("_ImageSize", "width height")):
+class ImageSize(namedtuple("ImageSize", "width height")):
     """ImageSize is a helper class that represents the 2-dimensional size
     of an image.  Generally, it isn't necessary for a user to create
     ImageSize objects, as they are automatically generated on initialization
@@ -30,25 +31,22 @@ class ImageSize(namedtuple("_ImageSize", "width height")):
 
     """
 
-    def __init__(self, width, height):
+    def __new__(cls, width, height):
         if width <= 0:
             raise ValueError("width must be greater than 0")
-        if height <= 0:
-            raise ValueError("height must be greater than 0")
         try:
             width = index(width)
         except TypeError:
             raise TypeError("width must be of integral value or provide "
                             "an __index__ method")
+        if height <= 0:
+            raise ValueError("height must be greater than 0")
         try:
             height = index(height)
         except TypeError:
             raise TypeError("height must be of integral value or provide "
                             "an __index__ method")
-        super(ImageSize, self).__init__(width, height)
-
-    def __repr__(self):
-        return "ImageSize(width=%d, height=%d)" % (self.width, self.height)
+        return super(ImageSize, cls).__new__(cls, width, height)
 
 
 class ImageMixin(object):
@@ -384,27 +382,33 @@ class Image(ImageMixin):
                                  "elements, not {}".format(size))
 
         if source:
+            # TODO: deal with source having a value
             if color:
-                # issue warning that color will be ignored
-                pass
+                warnings.warn("color is disregarded when source is not None.")
             if isinstance(source, ImageMixin):
                 if size is None:
                     self._size = source.size
                     # initialize the buffer
                 else:
                     # deal with resizing
+                    pass
                 if mode is None:
                     self._mode = source.mode
                 else:
                     # deal with converting color
+                    pass
             else:
                 # source had better be an iterable that we can stuff 
                 #into a buffer
                 pass
         elif size and mode:
             color = tuple(color or mode.transparent_color)
-            assert len(color) == self.components
+            if len(color) != self.components:
+                raise ValueError("color must be an iterable with {} values, "
+                                 "one for each component in {}.".format(
+                                     self.components, self.mode))
             # initialize buffer to the correct size and color
+            self._buffer = util.initialize_buffer(mode.get_length(size), color)
         else:
             raise ValueError("You must minimally specify a source from "
                              "which to build the image or a mode and size "
