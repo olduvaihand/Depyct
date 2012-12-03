@@ -49,13 +49,17 @@ class ImageMode(str):
         integers or floats: the minimum and maximum valid value for the
         component.
 
+    :attr:`.transparent_color`
+        A tuple of component values representing a transparent color in a
+        particular mode.
+
     """
 
     def __new__(cls, *args, **kwargs):
         return str.__new__(cls, "")
 
     def __init__(self, component_names, bits_per_component=8, planar=False,
-            subsampling=None, intervals=None, pack=None, unpack=None):
+            subsampling=None, intervals=None, transparent_color=None):
         super(ImageMode, self).__init__()
         self.components = len(component_names)
         self.component_names = tuple(component_names)
@@ -63,9 +67,11 @@ class ImageMode(str):
         self.planar = planar
         self.subsampling = subsampling or ((1, 1),)*self.components
         self.intervals = intervals or \
-                    ((0, 2**self.bits_per_component - 1),) * self.components
+                         ((0, 2**self.bits_per_component - 1),)*self.components
         self.x_divisor = max(x for x, y in self.subsampling)
         self.y_divisor = max(y for x, y in self.subsampling)
+        self.transparent_color = transparent_color or \
+                                 tuple(i[0] for i in self.intervals)
 
     def _create_pixel_cls(self):
         from .pixel import pixel_maker
@@ -172,8 +178,8 @@ HSL96 = ImageMode("hsl", 32, intervals=((0., 360.), (0., 1.), (0., 1.)))
 HSV192 = ImageMode("hsv", 64, intervals=((0., 360.), (0., 1.), (0., 1.)))
 HSL192 = ImageMode("hsl", 64, intervals=((0., 360.), (0., 1.), (0., 1.)))
 
-CMYK = ImageMode("cmyk")
-CMYK64 = ImageMode("cmyk", 16)
+CMYK = ImageMode("cmyk", transparent_color=(255,)*4)
+CMYK64 = ImageMode("cmyk", 16, transparent_color=(65535,)*4)
 
 MODES = ImageMode._finalize_modes()
 
