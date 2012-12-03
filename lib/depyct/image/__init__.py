@@ -417,6 +417,10 @@ class Image(ImageMixin):
                 if util.py27 and isinstance(source, str):
                     pass
         elif size and mode:
+
+            assert self.size.width % self.mode.x_divisor == 0
+            assert self.size.height % self.mode.y_divisor == 0
+
             if color and len(color) != self.components:
                 raise ValueError("color must be an iterable with {} values, "
                                  "one for each component in {}.".format(
