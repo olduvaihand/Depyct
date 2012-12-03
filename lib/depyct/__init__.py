@@ -6,8 +6,8 @@
 """
 
 """
-from image.mode import *
-from image import *
+from .image.mode import *
+from .image import *
 
 __version__ = "0.0.1a1"
 __all__ = image.mode.__all__ + image.__all__
