@@ -7,6 +7,8 @@
 """
 from struct import Struct
 
+from depyct import util
+
 
 __all__ = [
     "Pixel",
@@ -78,7 +80,7 @@ class pixel_value_property(object):
     def __get__(self, obj, type=None):
         if obj is None:
             return self
-        if py2:
+        if util.py27:
             s = b"".join(obj.buffer[:])
         else:
             s = obj.buffer[:]

@@ -56,6 +56,14 @@ class ImageMixin(object):
     """
 
     @property
+    def width(self):
+        return self.size.width
+
+    @property
+    def height(self):
+        return self.size.height
+
+    @property
     def components(self):
         return self.mode.components
 
@@ -390,7 +398,9 @@ class Image(ImageMixin):
                 if size:
                     if size != source.size:
                         # deal with resizing
+                        pass
                     else:
+                        pass
                 else:
                     self._size = source.size
                 if mode is None:
@@ -418,7 +428,6 @@ class Image(ImageMixin):
 
         # assert self.size.width % self.mode.x_divisor == 0
         # assert self.size.height % self.mode.y_divisor == 0
-        # buffer_size = mode.get_length(self.size)
 
     @util.readonly_property
     def buffer(self):
