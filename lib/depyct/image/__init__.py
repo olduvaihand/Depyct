@@ -56,14 +56,6 @@ class ImageMixin(object):
     """
 
     @property
-    def width(self):
-        return self.size.width
-
-    @property
-    def height(self):
-        return self.size.height
-
-    @property
     def components(self):
         return self.mode.components
 
@@ -255,8 +247,8 @@ class ImageMixin(object):
         # line
         if isinstance(key, int):
             if key < 0:
-                key += self.height
-            bytes_per_line = self.mode.bytes_per_pixel * self.width
+                key += self.size.height
+            bytes_per_line = self.mode.bytes_per_pixel * self.size.width
             start = key * bytes_per_line
             end = start + bytes_per_line
             return Line(self.mode, self.buffer[start:end])
@@ -275,11 +267,12 @@ class ImageMixin(object):
                 pixel_idx = key[0]
                 if isinstance(pixel_idx, int):
                     if pixel_idx < 0:
-                        pixel_idx += self.width
+                        pixel_idx += self.size.width
                     pixel_idx = slice(pixel_idx, pixel_idx + 1)
-                l_start, l_stop, l_step = key[1].indices(self.height)
-                width = len(range(*pixel_idx.indices(self.width)))
+                l_start, l_stop, l_step = key[1].indices(self.size.height)
+                width = len(range(*pixel_idx.indices(self.size.width)))
                 height = len(range(l_start, l_stop, l_step))
+                # FIXME: replace this with the correct thing
                 res = Frame(self.mode, size=(width, height),
                             buffer=init_buffer(self.mode, (width, height)))
                 for i, l in enumerate(range(l_start, l_stop, l_step)):
@@ -296,7 +289,8 @@ class ImageMixin(object):
                             "slicing.")
         if isinstance(key, int):
             line = self[key]
-            assert (value.height == 1 and value.width == self.width)
+            assert (value.size.height == 1 and
+                    value.size.width == self.size.width)
             line[:] = value[0]
             return
         elif isinstance(key, slice):
@@ -319,11 +313,11 @@ class ImageMixin(object):
                 pixel_idx = key[0]
                 if isinstance(pixel_idx, int):
                     if pixel_idx < 0:
-                        pixel_idx += self.width
+                        pixel_idx += self.size.width
                     pixel_idx = slice(pixel_idx, pixel_idx + 1)
-                l_start, l_stop, l_step = key[1].indices(self.height)
+                l_start, l_stop, l_step = key[1].indices(self.size.height)
                 height = len(range(l_start, l_stop, l_step))
-                assert height == value.height
+                assert height == value.size.height
                 for i, values in zip(range(l_start, l_stop, l_step), value):
                     #line = self[i]
                     self[i][pixel_idx] = values
