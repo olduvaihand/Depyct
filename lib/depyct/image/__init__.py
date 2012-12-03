@@ -1,4 +1,4 @@
-# depyct/image.py
+# depyct/image/__init__.py
 # Copyright (c) 2012 the Depyct authors and contributors <see AUTHORS>
 #
 # This module is part of Depyct and is released under the MIT License:
@@ -7,8 +7,11 @@
 """
 from collections import namedtuple
 from operator import index
+from struct import Struct
 
-from .image_mode import *
+from .mode import *
+from .line import Line
+from .. import util
 
 
 __all__ = ["ImageSize", "ImageMixin", "Image"]
@@ -137,39 +140,41 @@ class ImageMixin(object):
         """Return a new copy of the image rotated 90 degrees clockwise.
         
         """
-        width, height = self.size
+        new_height, new_width = self.size
         if self.planar:
-            pass
+            raise NotImplemented("rotate90() is not implemented for planar "
+                                 "images.")
         else:
-            source = [[None for c in range(height)] for r in range(width)]
-            for y, line in enumerate(self):
-                for x, pixel in enumerate(line):
-                    source[x][width-y] = pixel
-        return Image(self.mode, source=source)
+            res = Image(self.mode, size=(new_width, new_height))
+            for x, line in enumerate(self):
+                for y, pixel in enumerate(line):
+                    res[new_width-x-1, y] = pixel.value
+        return res
 
     def rotate180(self):
         """Return a new copy of the image rotated 180 degrees clockwise.
         
         """
         if self.planar:
-            pass
+            raise NotImplemented("rotate180() is not implemented for planar "
+                                 "images.")
         else:
-            source = self[::-1,::-1]
-        return Image(self.mode, source=source)
+            return self[::-1, ::-1]
         
     def rotate270(self):
         """Return a new copy of the image rotated 270 degrees clockwise.
         
         """
-        width, height = self.size
+        new_height, new_width = self.size
         if self.planar:
-            pass
+            raise NotImplemented("rotate270() is not implemented for planar "
+                                 "images.")
         else:
-            source = [[None for c in range(height)] for r in range(width)]
-            for y, line in enumerate(self):
-                for x, pixel in enumerate(line):
-                    source[width-x-1][y] = pixel
-        return Image(self.mode, source=source)
+            res = Image(self.mode, size=(new_width, new_height))
+            for x, line in enumerate(self):
+                for y, pixel in enumerate(line):
+                    res[x, new_height-y-1] = pixel.value
+        return res
 
     def clip(self):
         """Saturate invalid component values in planar images to the minimum or
@@ -190,6 +195,7 @@ class ImageMixin(object):
         individual components.
 
         """
+        raise NotImplemented("split() is not yet implemented.")
         if self.planar:
             pass
         else:
@@ -230,58 +236,43 @@ class ImageMixin(object):
 
         """
         if self.planar:
-            raise TypeError("Planar images do not support indexing "
-                                 "or slicing.")
+            raise TypeError("Planar images do not support indexing or "
+                            "slicing.")
         # line
         if isinstance(key, int):
-            # FIXME: update this so that it's actually returning
-            #        a Line associated with this chunk of the buffer
-            # bytes_per_line = self.bytes_per_pixel * self.size.width
-            # start = key * bytes_per_line
-            # end = start + bytes_per_line
-            # return self._line_cls(self.mode,
-            #                       memoryview(self.buffer[start:end]))
-            return self.buffer[key]
+            if key < 0:
+                key += self.height
+            bytes_per_line = self.mode.bytes_per_pixel * self.width
+            start = key * bytes_per_line
+            end = start + bytes_per_line
+            return Line(self.mode, self.buffer[start:end])
         elif isinstance(key, slice):
-            return self[::,key]
+            return self[::, key]
         else:
             key = tuple(key)
         if len(key) == 2 and all(isinstance(i, (int, slice)) for i in key):
             # pixel (int, int)
-            if all(isinstance(i, int) for i in key):
-                # FIXME: update this so that it's actually returning
-                #        a Pixel associated with this chunk of the buffer
-                # bytes_per_pixel = self.bytes_per_pixel
-                # bytes_per_line = bytes_per_pixel * self.size.width
-                # offset = bytes_per_pixel * key[0]
-                # start = key[1] * bytes_per_line + offset
-                # end = start + bytes_per_pixel
-                # return self._pixel_cls(self.mode,
-                #                        memoryview(self.buffer[start:end]))
-                return self.buffer[key[0]][key[1]]
+            # horizontal image (slice, int)
+            if isinstance(key[1], int):
+                return self[key[1]][key[0]]
             # image (slice, slice)
-            if all(isinstance(i, slice) for i in key):
-                # FIXME: this should be copying the data
-                #        not just getting lines
-                source = []
-                for line in self.buffer[key[1]]:
-                    source.append(line[key[0]])
-            # horizontal image (width =  (slice, int)
-            elif isinstance(key[0], slice):
-                # FIXME: this should be copying the data
-                #        not just getting lines
-                source = [self[key[1]][key[0]]]
             # vertical image (int, slice)
-            else: #elif isinstance(key[0], int):
-                # FIXME: this should be copying the data
-                #        not just getting lines
-                source = []
-                for line in self[key[1]]:
-                    source.append([line[key[0]]])
-            return Image(self.mode, source=source)
-        else:
-            raise TypeError("Image indices must be int, slice, or a "
-                            "two-tuple composed of ints, slices, or both.")
+            else:
+                pixel_idx = key[0]
+                if isinstance(pixel_idx, int):
+                    if pixel_idx < 0:
+                        pixel_idx += self.width
+                    pixel_idx = slice(pixel_idx, pixel_idx + 1)
+                l_start, l_stop, l_step = key[1].indices(self.height)
+                width = len(range(*pixel_idx.indices(self.width)))
+                height = len(range(l_start, l_stop, l_step))
+                res = Frame(self.mode, size=(width, height),
+                            buffer=init_buffer(self.mode, (width, height)))
+                for i, l in enumerate(range(l_start, l_stop, l_step)):
+                    res[i] = self[l][pixel_idx]
+                return res
+        raise TypeError("Image indices must be int, slice, or a "
+                        "2-tuple composed of ints, slices, or both.")
 
     def __setitem__(self, key, value):
         """
@@ -289,8 +280,44 @@ class ImageMixin(object):
         if self.planar:
             raise TypeError("Planar images do not support indexing or "
                             "slicing.")
+        if isinstance(key, int):
+            line = self[key]
+            assert (value.height == 1 and value.width == self.width)
+            line[:] = value[0]
+            return
+        elif isinstance(key, slice):
+            self[::, key] = value
+            return
+        else:
+            key = tuple(key)
+        if len(key) == 2 and all(isinstance(i, (int, slice)) for i in key):
+            # pixel (int, int)
+            if all(isinstance(i, int) for i in key):
+                # pixel = self[key]
+                self[key].value = value
+            # horizontal image (slice, int)
+            elif isinstance(key[1], int):
+                # line = self[key[1]]
+                self[key[1]][key[0]] = value[0]
+            # image (slice, slice)
+            # vertical image (int, slice)
+            else:
+                pixel_idx = key[0]
+                if isinstance(pixel_idx, int):
+                    if pixel_idx < 0:
+                        pixel_idx += self.width
+                    pixel_idx = slice(pixel_idx, pixel_idx + 1)
+                l_start, l_stop, l_step = key[1].indices(self.height)
+                height = len(range(l_start, l_stop, l_step))
+                assert height == value.height
+                for i, values in zip(range(l_start, l_stop, l_step), value):
+                    #line = self[i]
+                    self[i][pixel_idx] = values
+        else:
+            raise TypeError("Image indices must be int, slice, or a "
+                            "2-tuple composed of ints, slices, or both.")
 
-
+            
 class Image(ImageMixin):
     """
     :attr:`mode`
@@ -308,6 +335,25 @@ class Image(ImageMixin):
     """
 
     def __init__(self, mode=None, size=None, color=None, source=None):
+
+        if isinstance(source, ImageMixin):
+            # if mode is None:
+            #     mode = source.mode
+            # if size is None:
+            #     size = source.size
+            # 
+            # 
+            # 
+
+            pass
+
+        if source is not None and color is not None:
+            raise ValueError("source and color cannot be specified "
+                             "simultaneously.")
+
+        if mode is not None and mode not in MODES:
+            raise ValueError("{} is not a valid mode.".format(mode))
+
         self.mode = mode
         self._size = ImageSize(*size)
         self.color = color

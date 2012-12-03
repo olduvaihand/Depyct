@@ -1,4 +1,4 @@
-# depyct/image_mode.py
+# depyct/image/mode.py
 # Copyright (c) 2012 the Depyct authors and contributors <see AUTHORS>
 #
 # This module is part of Depyct and is released under the MIT License:
@@ -55,7 +55,7 @@ class ImageMode(str):
         return str.__new__(cls, "")
 
     def __init__(self, component_names, bits_per_component=8, planar=False,
-            subsampling=None, intervals=None):
+            subsampling=None, intervals=None, pack=None, unpack=None):
         super(ImageMode, self).__init__()
         self.components = len(component_names)
         self.component_names = tuple(component_names)
@@ -67,9 +67,15 @@ class ImageMode(str):
         self.x_divisor = max(x for x, y in self.subsampling)
         self.y_divisor = max(y for x, y in self.subsampling)
 
+    def _create_pixel_cls(self):
+        from .pixel import pixel_maker
+        # this needs to be updated to deal with any mode that does not deal
+        # with byte-sized components
+        self.pixel_cls = pixel_maker(self)
+
     @property
     def _is_float(self):
-        return self.endswith("F")
+        return self.endswith("F") or isinstance(self.intervals[0][0], float)
 
     def __repr__(self):
         res = "<ImageMode {}: {}".format(self, ", ".join(self.component_names))
@@ -126,6 +132,7 @@ class ImageMode(str):
                 mode.__init__(obj.component_names, obj.bits_per_component,
                     obj.planar, obj.subsampling, obj.intervals)
                 modes.add(mode)
+                cls._create_pixel_cls(mode)
                 globals()[name] = mode
         return modes
                 
@@ -136,7 +143,7 @@ L32 = ImageMode("l", 32)
 LA = ImageMode("la")
 LA32 = ImageMode("la", 16)
 
-L16F = ImageMode("l", 16, intervals=(0., 1.))
+#L16F = ImageMode("l", 16, intervals=(0., 1.))
 L32F = ImageMode("l", 32, intervals=(0., 1.))
 L64F = ImageMode("l", 64, intervals=(0., 1.))
 LA32F = ImageMode("la", 32, intervals=(0., 1.)*2)
@@ -146,8 +153,8 @@ RGB48 = ImageMode("rgb", 16)
 RGBA = ImageMode("rgba")
 RGBA64 = ImageMode("rgba", 16)
 
-RGB48F = ImageMode("rgb", 16, intervals=(0., 1.)*3)
-RGBA64F = ImageMode("rgba", 16, intervals=(0., 1.)*4)
+#RGB48F = ImageMode("rgb", 16, intervals=(0., 1.)*3)
+#RGBA64F = ImageMode("rgba", 16, intervals=(0., 1.)*4)
 RGB96F = ImageMode("rgb", 32, intervals=(0., 1.)*3)
 RGBA128F = ImageMode("rgba", 32, intervals=(0., 1.)*4)
 RGB192F = ImageMode("rgb", 64, intervals=(0., 1.)*3)
@@ -159,8 +166,8 @@ YV12 = ImageMode(("y", "cr", "cb"), planar=True,
 JPEG_YV12 = ImageMode(("y", "cr", "cb"), planar=True,
                       subsampling=((1, 1), (2, 2), (2, 2)))
 
-HSV = ImageMode("hsv", 16, intervals=((0., 360.), (0., 1.), (0., 1.)))
-HSL = ImageMode("hsl", 16, intervals=((0., 360.), (0., 1.), (0., 1.)))
+#HSV = ImageMode("hsv", 16, intervals=((0., 360.), (0., 1.), (0., 1.)))
+#HSL = ImageMode("hsl", 16, intervals=((0., 360.), (0., 1.), (0., 1.)))
 HSV96 = ImageMode("hsv", 32, intervals=((0., 360.), (0., 1.), (0., 1.)))
 HSL96 = ImageMode("hsl", 32, intervals=((0., 360.), (0., 1.), (0., 1.)))
 HSV192 = ImageMode("hsv", 64, intervals=((0., 360.), (0., 1.), (0., 1.)))
