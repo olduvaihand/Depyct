@@ -7,6 +7,7 @@
 """
 from collections import namedtuple
 from operator import index
+import os
 from struct import Struct
 import warnings
 
@@ -386,12 +387,12 @@ class Image(ImageMixin):
             if color:
                 warnings.warn("color is disregarded when source is not None.")
             if isinstance(source, ImageMixin):
-                if size is None:
-                    self._size = source.size
-                    # initialize the buffer
+                if size:
+                    if size != source.size:
+                        # deal with resizing
+                    else:
                 else:
-                    # deal with resizing
-                    pass
+                    self._size = source.size
                 if mode is None:
                     self._mode = source.mode
                 else:
@@ -399,8 +400,10 @@ class Image(ImageMixin):
                     pass
             else:
                 # source had better be an iterable that we can stuff 
-                #into a buffer
-                pass
+                # into a buffer
+                # python2 supports a byte string
+                if util.py27 and isinstance(source, str):
+                    pass
         elif size and mode:
             if color and len(color) != self.components:
                 raise ValueError("color must be an iterable with {} values, "
@@ -428,6 +431,27 @@ class Image(ImageMixin):
     @util.readonly_property
     def mode(self):
         return self._mode
+
+    @classmethod
+    def open(cls, filename, format_options={}, **open_options):
+        from depyct.io.format import registry
+
+        ext = os.path.ext(filename)
+        try:
+            format = registry[ext](**format_options)
+        except KeyError:
+            raise IOError("{} is not a recognized image format.".format(ext))
+        return format.open(filename, **open_options)
+
+    def save(self, filename, format_options={}, **save_options):
+        from depyct.io.format import registry
+
+        ext = os.path.ext(filename)
+        try:
+            format = registry[ext](**format_options)
+        except KeyError:
+            raise IOError("{} is not a recognized image format.".format(ext))
+        return format.save(self, filename, **save_options)
 
 
 # FIXME: it might not be a bad idea to make this a globally configurable thing

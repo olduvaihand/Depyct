@@ -3,8 +3,7 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
-"""\
-Image File Formats
+"""Image File Formats
 ==================
 
 Overview paragraph on the problem, issues, and the solution we're using here.
@@ -12,12 +11,12 @@ Overview paragraph on the problem, issues, and the solution we're using here.
 Detailed Description of Module Contents
 ---------------------------------------
 
-:data _registry: A `dict` of :class:`.FormatBase` subclasses and classes
+:data registry: A `dict` of :class:`.FormatBase` subclasses and classes
 implementing the :class:`.FormatBase` interface.  The registry is keyed by the
 file extensions the image formats are associated with.
 
 Adding Custom Image :class:`.FormatBase`\ s
-----------------------------------------------
+-------------------------------------------
 
 Description of adding a new class with code
 
@@ -76,7 +75,7 @@ Description of adding a new class with code
 ...                fp.write(self._save_map[tuple(pixel)])
 ...
 ...
->>> ABCFormat in _registry.values()
+>>> ABCFormat in registry.values()
 True
 >>> import StringIO
 >>>
@@ -94,12 +93,11 @@ True
 >>> original == copy
 True
 """
-
 from abc import ABCMeta, abstractmethod, abstractproperty
 import re
 
 
-__all__ = ['register', 'unregister', 'FormatBase']
+__all__ = ['register', 'unregister', 'registry', 'FormatBase']
 
 
 class _Registry(dict):
@@ -220,14 +218,14 @@ class _Registry(dict):
                 return self._trim_extensions(cls_extensions + tuple(also))
 
 
-_registry = _Registry()
-register = _registry.register
-unregister = _registry.unregister
+registry = _Registry()
+register = registry.register
+unregister = registry.unregister
 
 
 class FormatMeta(ABCMeta):
     """Metaclass for image formats.  Registers the format with
-    :data:`._registry`, a mapping of file extensions to formats.
+    :data:`.registry`, a mapping of file extensions to formats.
     """
 
     def __new__(cls, *args):
@@ -254,11 +252,11 @@ class FormatBase(object):
 
     :attr extensions: An iterable of strings representing the file extensions
       handled by the FormatBase class.
+
     """
 
-#py27
-    __metaclass__ = FormatMeta
-#/py27
+    if util.py27:
+        __metaclass__ = FormatMeta
 
     defaults = {}
 
@@ -270,6 +268,7 @@ class FormatBase(object):
     @abstractproperty
     def extensions(self):
         """File extensions associated with the format.
+
         """
         raise NotImplemented("{}.{} is not yet implemented".format(
             self.__class__.__name__, "extensions"))
@@ -280,6 +279,7 @@ class FormatBase(object):
 
         :param file: object supporting the file protocol
         :rtype: :class:`~pyitk.pep368.ImageMixin`
+
         """
         raise NotImplemented("{}.{} is not yet implemented".format(
             self.__class__.__name__, "load"))
@@ -291,6 +291,7 @@ class FormatBase(object):
         :type image: :class:`~pyitk.pep368.ImageMixin`
         :param file: object supporting the file protocol
         :rtype: None
+
         """
         raise NotImplemented("{}.{} is not yet implemented".format(
             self.__class__.__name__, "save"))
