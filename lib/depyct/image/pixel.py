@@ -104,7 +104,7 @@ class struct_pixel_value_property(pixel_value_property):
         if mode._is_float:
             struct_type = {32: "f", 64: "d"}[bpc]
         else:
-            struct_type = {8: "B", 16: "I", 32: "L", 64: "Q"}[bpc]
+            struct_type = {8: "B", 16: "H", 32: "L", 64: "Q"}[bpc]
         self.pixel_struct = Struct("{}{}".format(mode.components, struct_type))
 
     def pack(self, *values):
