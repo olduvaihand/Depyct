@@ -135,7 +135,8 @@ class ImageMode(str):
             if type(obj) is cls:
                 mode = str.__new__(cls, name if name != 'L32' else 'I')
                 mode.__init__(obj.component_names, obj.bits_per_component,
-                    obj.planar, obj.subsampling, obj.intervals)
+                    obj.planar, obj.subsampling, obj.intervals,
+                    obj.transparent_color)
                 modes.add(mode)
                 cls._create_pixel_cls(mode)
                 globals()[name] = mode
@@ -149,9 +150,9 @@ LA = ImageMode("la")
 LA32 = ImageMode("la", 16)
 
 #L16F = ImageMode("l", 16, intervals=(0., 1.))
-L32F = ImageMode("l", 32, intervals=(0., 1.))
-L64F = ImageMode("l", 64, intervals=(0., 1.))
-LA32F = ImageMode("la", 32, intervals=(0., 1.)*2)
+L32F = ImageMode("l", 32, intervals=((0., 1.),))
+L64F = ImageMode("l", 64, intervals=((0., 1.),))
+LA32F = ImageMode("la", 32, intervals=((0., 1.),)*2)
 
 RGB = ImageMode("rgb")
 RGB48 = ImageMode("rgb", 16)
@@ -160,10 +161,10 @@ RGBA64 = ImageMode("rgba", 16)
 
 #RGB48F = ImageMode("rgb", 16, intervals=(0., 1.)*3)
 #RGBA64F = ImageMode("rgba", 16, intervals=(0., 1.)*4)
-RGB96F = ImageMode("rgb", 32, intervals=(0., 1.)*3)
-RGBA128F = ImageMode("rgba", 32, intervals=(0., 1.)*4)
-RGB192F = ImageMode("rgb", 64, intervals=(0., 1.)*3)
-RGBA256F = ImageMode("rgba", 64, intervals=(0., 1.)*4)
+RGB96F = ImageMode("rgb", 32, intervals=((0., 1.),)*3)
+RGBA128F = ImageMode("rgba", 32, intervals=((0., 1.),)*4)
+RGB192F = ImageMode("rgb", 64, intervals=((0., 1.),)*3)
+RGBA256F = ImageMode("rgba", 64, intervals=((0., 1.),)*4)
 
 YV12 = ImageMode(("y", "cr", "cb"), planar=True,
                  subsampling=((1, 1), (2, 2), (2, 2)),
