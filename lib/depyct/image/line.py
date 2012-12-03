@@ -5,6 +5,8 @@
 # http://www.opensource.org/licenses/mit-license.php
 """
 """
+from depyct import util
+
 __all__ = ["Line"]
 
 
@@ -25,8 +27,9 @@ class Line(object):
         return "<{}: {}>".format(self.__class__.__name__,
                                  tuple(p.value for p in self))
 
-    def __unicode__(self):
-        return unicode(str(self))
+    if util.py27:
+        def __unicode__(self):
+            return unicode(str(self))
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__,

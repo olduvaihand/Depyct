@@ -428,8 +428,17 @@ class Image(ImageMixin):
                              "which to build the image or a mode and size "
                              "with which to initialize the buffer.")
 
-        # assert self.size.width % self.mode.x_divisor == 0
-        # assert self.size.height % self.mode.y_divisor == 0
+    def __str__(self):
+        return "{}(mode={}, size={})".format(self.__class__.__name__,
+                                             self.mode, self.size)
+
+    if util.py27:
+        def __unicode__(self):
+            return unicode(str(self))
+
+    def __repr__(self):
+        return "{}<\n\t{}\n>".format(self.__class__.__name__,
+                                   "\n\t".join(repr(l) for l in self))
 
     @util.readonly_property
     def buffer(self):
