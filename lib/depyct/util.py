@@ -6,6 +6,7 @@
 """
 
 """
+import array
 import sys
 
 py27 = sys.version_info == (2, 7)
@@ -30,3 +31,14 @@ class readonly_property(object):
 
     def __delete__(self, obj):
         raise TypeError("{} is a read-only value.".format(self.name))
+
+
+def initialize_buffer(mode, size, color=None):
+    if color is None:
+        color = mode.transparent_color
+    s = mode.pixel_cls.value.pack(*color)
+    initial_value = s * (mode.get_length(size) // 8)
+    if py27:
+        return bytearray(initial_value)
+    else:
+        return array.array("B", initial_value)

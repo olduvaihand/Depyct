@@ -402,13 +402,12 @@ class Image(ImageMixin):
                 #into a buffer
                 pass
         elif size and mode:
-            color = tuple(color or mode.transparent_color)
-            if len(color) != self.components:
+            if color and len(color) != self.components:
                 raise ValueError("color must be an iterable with {} values, "
                                  "one for each component in {}.".format(
                                      self.components, self.mode))
             # initialize buffer to the correct size and color
-            self._buffer = util.initialize_buffer(mode.get_length(size), color)
+            self._buffer = util.initialize_buffer(mode, size, color)
         else:
             raise ValueError("You must minimally specify a source from "
                              "which to build the image or a mode and size "
