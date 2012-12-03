@@ -8,6 +8,9 @@
 __all__ = ["Line"]
 
 
+Image = None
+
+
 class Line(object):
     """
 
@@ -40,9 +43,6 @@ class Line(object):
         elif isinstance(key, slice):
             p_start, p_stop, p_step = key.indices(len(self))
             width = len(range(p_start, p_stop, p_step))
-            # FIXME: here's that circular dependency again. 
-            # it might be preferable to make this something that's configurable
-            # maybe a call to a registry to get the current image class?
             res = Image(self.mode, size=(width, 1))
             for i, pixel in enumerate(range(p_start, p_stop, p_step)):
                 res[i, 0].value = self[pixel].value
@@ -66,3 +66,8 @@ class Line(object):
     def __iter__(self):
         for i in range(len(self)):
             yield self[i]
+
+
+def register_image_cls(image_cls):
+    global Image
+    Image = image_cls

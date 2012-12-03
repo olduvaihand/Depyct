@@ -11,7 +11,7 @@ from struct import Struct
 import warnings
 
 from .mode import *
-from .line import Line
+from .line import Line, register_image_cls
 from depyct import util
 
 
@@ -428,3 +428,8 @@ class Image(ImageMixin):
     @util.readonly_property
     def mode(self):
         return self._mode
+
+
+# FIXME: it might not be a bad idea to make this a globally configurable thing
+#        for the sake of cooperating with other libraries
+register_image_cls(Image)
