@@ -248,6 +248,8 @@ class ImageMixin(object):
         if isinstance(key, int):
             if key < 0:
                 key += self.size.height
+            if key >= self.size.height:
+                raise IndexError("Line index out of range.")
             bytes_per_line = self.mode.bytes_per_pixel * self.size.width
             start = key * bytes_per_line
             end = start + bytes_per_line
@@ -268,13 +270,13 @@ class ImageMixin(object):
                 if isinstance(pixel_idx, int):
                     if pixel_idx < 0:
                         pixel_idx += self.size.width
+                    if pixel_idx > self.size.width:
+                        raise IndexError("Pixel index out of range.")
                     pixel_idx = slice(pixel_idx, pixel_idx + 1)
                 l_start, l_stop, l_step = key[1].indices(self.size.height)
                 width = len(range(*pixel_idx.indices(self.size.width)))
                 height = len(range(l_start, l_stop, l_step))
-                # FIXME: replace this with the correct thing
-                res = Frame(self.mode, size=(width, height),
-                            buffer=init_buffer(self.mode, (width, height)))
+                res = Image(self.mode, size=(width, height))
                 for i, l in enumerate(range(l_start, l_stop, l_step)):
                     res[i] = self[l][pixel_idx]
                 return res
@@ -288,6 +290,10 @@ class ImageMixin(object):
             raise TypeError("Planar images do not support indexing or "
                             "slicing.")
         if isinstance(key, int):
+            if key < 0:
+                key += self.size.height
+            if key >= self.size.height:
+                raise IndexError("Line index out of range.")
             line = self[key]
             assert (value.size.height == 1 and
                     value.size.width == self.size.width)
@@ -314,6 +320,8 @@ class ImageMixin(object):
                 if isinstance(pixel_idx, int):
                     if pixel_idx < 0:
                         pixel_idx += self.size.width
+                    if pixel_idx > self.size.width:
+                        raise IndexError("Pixel index out of range.")
                     pixel_idx = slice(pixel_idx, pixel_idx + 1)
                 l_start, l_stop, l_step = key[1].indices(self.size.height)
                 height = len(range(l_start, l_stop, l_step))

@@ -37,6 +37,10 @@ class Line(object):
 
     def __getitem__(self, key):
         if isinstance(key, int):
+            if key < 0:
+                key += len(self)
+            if key >= len(self):
+                raise IndexError("Pixel index is out of range.")
             start = key * self.mode.bytes_per_pixel
             end = start + self.mode.bytes_per_pixel
             return self.mode.pixel_cls(self.buffer[start:end])
@@ -52,6 +56,10 @@ class Line(object):
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
+            if key < 0:
+                key += len(self)
+            if key >= len(self):
+                raise IndexError("Pixel index is out of range.")
             self[key].value = value
         elif isinstance(key, slice):
             p_start, p_stop, p_step = key.indices(len(self))

@@ -44,9 +44,19 @@ class Pixel(object):
             yield c
 
     def __getitem__(self, key):
+        if isinstance(key, int):
+            if key < 0:
+                key += self.mode.components
+            if key >= self.mode.components:
+                raise IndexError("Component index is out of range.")
         return self.value[key]
 
     def __setitem__(self, key, value):
+        if isinstance(key, int):
+            if key < 0:
+                key += self.mode.components
+            if key >= self.mode.components:
+                raise IndexError("Component index is out of range.")
         cur = list(self.value)
         cur[key] = value
         self.value = cur
