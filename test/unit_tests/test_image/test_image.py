@@ -1,13 +1,17 @@
-# test/unit_tests/test_image/test_image_mixin.py
+# test/unit_tests/test_image/test_image.py
 # Copyright (c) 2012 the Depyct authors and contributors <see AUTHORS>
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
 from depyct.testing import DepyctUnitTest
-from depyct.image import ImageMixin
+from depyct.image import Image
+from depyct.image.mode import RGB, YV12
 
 
-class NonPlanarImageMixinTest(DepyctUnitTest):
+class NonPlanarImageTest(DepyctUnitTest):
+
+    def setUp(self):
+        self.im = Image(RGB, size=(2, 2))
 
     def test_components(self):
         pass
@@ -64,7 +68,10 @@ class NonPlanarImageMixinTest(DepyctUnitTest):
         pass
 
 
-class PlanarImageMixinTest(DepyctUnitTest):
+class PlanarImageTest(DepyctUnitTest):
+
+    def setUp(self):
+        self.im = Image(YV12, size=(2, 2))
 
     def test_components(self):
         pass
@@ -107,7 +114,7 @@ class PlanarImageMixinTest(DepyctUnitTest):
 
     def test_pixels(self):
         with self.assertRaises(TypeError):
-            for pixel in self.pixels():
+            for pixel in self.im.pixels():
                 pass
 
     def test___iter__(self):

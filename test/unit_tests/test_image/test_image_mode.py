@@ -4,10 +4,13 @@
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
 from depyct.testing import DepyctUnitTest
-from depyct.image_mode import (ImageMode, MODES, L,
-    L16, L32, LA, LA32, L16F, L32F, L64F, LA32F, RGB, RGB48, RGBA, RGBA64,
-    RGB48F, RGBA64F, RGB96F, RGBA128F, RGB192F, RGBA256F, YV12, JPEG_YV12,
-    HSV, HSL, HSV96, HSL96, HSV192, HSL192, CMYK, CMYK64
+from depyct.image.mode import (ImageMode, MODES, L,
+    L16, L32, LA, LA32, #L16F,
+    L32F, L64F, LA32F, RGB, RGB48, RGBA, RGBA64,
+    #RGB48F, RGBA64F,
+    RGB96F, RGBA128F, RGB192F, RGBA256F, YV12, JPEG_YV12,
+    #HSV, HSL,
+    HSV96, HSL96, HSV192, HSL192, CMYK, CMYK64
 )
 
 
@@ -21,7 +24,7 @@ class ImageModeTest(DepyctUnitTest):
                 L32: 4,
                 LA: 2,
                 LA32: 4,
-                L16F: 2,
+                #L16F: 2,
                 L32F: 4,
                 L64F: 8,
                 LA32F: 8,
@@ -29,14 +32,14 @@ class ImageModeTest(DepyctUnitTest):
                 RGB48: 6,
                 RGBA: 4,
                 RGBA64: 8,
-                RGB48F: 6,
-                RGBA64F: 8,
+                #RGB48F: 6,
+                #RGBA64F: 8,
                 RGB96F: 12,
                 RGBA128F: 16,
                 RGB192F: 24,
                 RGBA256F: 32,
-                HSV: 6,
-                HSL: 6,
+                #HSV: 6,
+                #HSL: 6,
                 HSV96: 12,
                 HSL96: 12,
                 HSV192: 24,
@@ -46,8 +49,11 @@ class ImageModeTest(DepyctUnitTest):
             }
 
     def test_is_float(self):
-        float_modes = (L16F, L32F, L64F, LA32F, RGB48F, RGBA64F, RGB96F,
-                       RGBA128F, RGB192F, RGBA256F)
+        float_modes = (#L16F,
+                       L32F, L64F, LA32F, 
+                       #RGB48F, RGBA64F, 
+                       RGB96F, RGBA128F, RGB192F, RGBA256F,
+                       HSV96, HSL96, HSV192, HSL192)
         for mode in float_modes:
             self.assertTrue(mode._is_float)
         for mode in MODES:
@@ -75,7 +81,7 @@ class ImageModeTest(DepyctUnitTest):
         self.assertEquals(L32, "I")
         self.assertEquals(LA, "LA")
         self.assertEquals(LA32, "LA32")
-        self.assertEquals(L16F, "L16F")
+        #self.assertEquals(L16F, "L16F")
         self.assertEquals(L32F, "L32F")
         self.assertEquals(L64F, "L64F")
         self.assertEquals(LA32F, "LA32F")
@@ -83,16 +89,16 @@ class ImageModeTest(DepyctUnitTest):
         self.assertEquals(RGB48, "RGB48")
         self.assertEquals(RGBA, "RGBA")
         self.assertEquals(RGBA64, "RGBA64")
-        self.assertEquals(RGB48F, "RGB48F")
-        self.assertEquals(RGBA64F, "RGBA64F")
+        #self.assertEquals(RGB48F, "RGB48F")
+        #self.assertEquals(RGBA64F, "RGBA64F")
         self.assertEquals(RGB96F, "RGB96F")
         self.assertEquals(RGBA128F, "RGBA128F")
         self.assertEquals(RGB192F, "RGB192F")
         self.assertEquals(RGBA256F, "RGBA256F")
         self.assertEquals(YV12, "YV12")
         self.assertEquals(JPEG_YV12, "JPEG_YV12")
-        self.assertEquals(HSV, "HSV")
-        self.assertEquals(HSL, "HSL")
+        #self.assertEquals(HSV, "HSV")
+        #self.assertEquals(HSL, "HSL")
         self.assertEquals(HSV96, "HSV96")
         self.assertEquals(HSL96, "HSL96")
         self.assertEquals(HSV192, "HSV192")
