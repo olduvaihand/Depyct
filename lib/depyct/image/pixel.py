@@ -28,7 +28,7 @@ class Pixel(object):
         self.buffer = buffer
 
     def __str__(self):
-        return "<Pixel: {}>".format(tuple(self))
+        return "<{}: {}>".format(self.__class__.__name__, tuple(self))
 
     if util.py27:
         def __unicode__(self):
@@ -87,6 +87,12 @@ class pixel_value_property(object):
     """
 
     """
+
+    def unpack(self, buffer):
+        return tuple(buffer)
+
+    def pack(self, *values):
+        return values
 
     def __get__(self, obj, type=None):
         if obj is None:
