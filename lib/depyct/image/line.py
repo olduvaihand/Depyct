@@ -10,6 +10,9 @@ from depyct import util
 __all__ = ["Line"]
 
 
+if util.py3k:
+    long = int
+
 Image = None
 
 
@@ -39,7 +42,7 @@ class Line(object):
         return self._length
 
     def __getitem__(self, key):
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += len(self)
             if key >= len(self):
@@ -58,7 +61,7 @@ class Line(object):
                         "two-tuple composed of ints, slices, or both.")
 
     def __setitem__(self, key, value):
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += len(self)
             if key >= len(self):

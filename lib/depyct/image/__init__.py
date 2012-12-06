@@ -18,6 +18,9 @@ from depyct import util
 
 __all__ = ["ImageSize", "ImageMixin", "Image"]
 
+if util.py3k:
+    long = int
+
 
 class ImageSize(namedtuple("ImageSize", "width height")):
     """ImageSize is a helper class that represents the 2-dimensional size
@@ -245,7 +248,7 @@ class ImageMixin(object):
             raise TypeError("Planar images do not support indexing or "
                             "slicing.")
         # line
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += self.size.height
             if key >= self.size.height:
@@ -255,19 +258,22 @@ class ImageMixin(object):
             end = start + bytes_per_line
             return Line(self.mode, self.buffer[start:end])
         elif isinstance(key, slice):
+            #key = (slice(), key)
             return self[::, key]
         else:
             key = tuple(key)
-        if len(key) == 2 and all(isinstance(i, (int, slice)) for i in key):
+        if len(key) == 2 and all(isinstance(i, (int, long, slice)) for i in key):
             # pixel (int, int)
             # horizontal image (slice, int)
-            if isinstance(key[1], int):
+            # FIXME: let's see if we can do this without calling into 
+            #        __getitem__ again
+            if isinstance(key[1], (int, long)):
                 return self[key[1]][key[0]]
             # image (slice, slice)
             # vertical image (int, slice)
             else:
                 pixel_idx = key[0]
-                if isinstance(pixel_idx, int):
+                if isinstance(pixel_idx, (int, long)):
                     if pixel_idx < 0:
                         pixel_idx += self.size.width
                     if pixel_idx > self.size.width:
@@ -289,7 +295,7 @@ class ImageMixin(object):
         if self.planar:
             raise TypeError("Planar images do not support indexing or "
                             "slicing.")
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += self.size.height
             if key >= self.size.height:
@@ -300,24 +306,25 @@ class ImageMixin(object):
             line[:] = value[0]
             return
         elif isinstance(key, slice):
+            #key = slice(), key
             self[::, key] = value
             return
         else:
             key = tuple(key)
-        if len(key) == 2 and all(isinstance(i, (int, slice)) for i in key):
+        if len(key) == 2 and all(isinstance(i, (int, long, slice)) for i in key):
             # pixel (int, int)
-            if all(isinstance(i, int) for i in key):
+            if all(isinstance(i, (int, long)) for i in key):
                 # pixel = self[key]
                 self[key].value = value
             # horizontal image (slice, int)
-            elif isinstance(key[1], int):
+            elif isinstance(key[1], (int, long)):
                 # line = self[key[1]]
                 self[key[1]][key[0]] = value[0]
             # image (slice, slice)
             # vertical image (int, slice)
             else:
                 pixel_idx = key[0]
-                if isinstance(pixel_idx, int):
+                if isinstance(pixel_idx, (int, long)):
                     if pixel_idx < 0:
                         pixel_idx += self.size.width
                     if pixel_idx > self.size.width:

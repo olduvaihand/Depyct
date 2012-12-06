@@ -18,6 +18,9 @@ __all__ = [
     "pixel_maker"
 ]
 
+if util.py3k:
+    long = int
+
 
 class Pixel(object):
     """
@@ -45,7 +48,7 @@ class Pixel(object):
             yield c
 
     def __getitem__(self, key):
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += self.mode.components
             if key >= self.mode.components:
@@ -53,7 +56,7 @@ class Pixel(object):
         return self.value[key]
 
     def __setitem__(self, key, value):
-        if isinstance(key, int):
+        if isinstance(key, (int, long)):
             if key < 0:
                 key += self.mode.components
             if key >= self.mode.components:
