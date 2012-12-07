@@ -226,11 +226,13 @@ unregister = registry.unregister
 class FormatMeta(ABCMeta):
     """Metaclass for image formats.  Registers the format with
     :data:`.registry`, a mapping of file extensions to formats.
+
     """
 
     def __new__(cls, *args):
         name, bases, attrs = args
         parents = [b for b in bases if isinstance(b, FormatMeta)]
+        attrs["defaults"] = attrs.get("defaults", {}).copy()
         cls = super(FormatMeta, cls).__new__(cls, name, bases, attrs)
         if parents:
             if isinstance(cls.extensions, str):
@@ -243,9 +245,9 @@ class FormatMeta(ABCMeta):
 #py27
 class FormatBase(object):
 #/py27
-#py32
+#py3k
 #class FormatBase(metaclass=FormatMeta):
-#py32
+#/py3k
     """An abstract base class for image formats.
 
     :attr defaults: A `dict` of default configuration settings.
@@ -278,7 +280,7 @@ class FormatBase(object):
         """Load an image from `file` and return it.
 
         :param file: object supporting the file protocol
-        :rtype: :class:`~pyitk.pep368.ImageMixin`
+        :rtype: :class:`~depyct.image.ImageMixin`
 
         """
         raise NotImplementedError("{}.{} is not yet implemented".format(
@@ -288,7 +290,7 @@ class FormatBase(object):
     def save(self, image, filename, **options):
         """Save `image` to `file`.
 
-        :type image: :class:`~pyitk.pep368.ImageMixin`
+        :type image: :class:`~depyct.image.ImageMixin`
         :param file: object supporting the file protocol
         :rtype: None
 
