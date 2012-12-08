@@ -1,22 +1,5 @@
 # depyct/io/bmp.py
 """
-integer = struct.Struct("<I")
-
-def unpack(struct, stream):
-    return struct.unpack(stream.read(struct.size))[0]
-
-def read_bitmapfileheader(im):
-    return BMPFileHeader.from_buffer_copy(
-            im.read(ctypes.sizeof(BMPFileHeader)))
-
-def read_bitmapcoreheader(im):
-    return BMPCoreHeader.from_buffer_copy(
-            im.read(ctypes.sizeof(BMPCoreHeader)))
-
-def read_bitmapinfoheader(im):
-    return BMPInfoHeader.from_buffer_copy(
-            im.read(ctypes.sizeof(BMPInfoHeader)))
-
 def process_image(name):
     im = open(name, "rb")
     file_header = read_bitmapfileheader(im)
@@ -90,7 +73,7 @@ class BMPFileHeader(BMPStruct):
                 ("reserved1", ctypes.c_uint16),
                 ("reserved2", ctypes.c_uint16),
                 ("offset", ctypes.c_uint32),
-                ("dib_header_size", ctypes.c_uint16)]
+                ("dib_header_size", ctypes.c_uint32)]
 
 
 class BMPCoreHeader(BMPStruct):

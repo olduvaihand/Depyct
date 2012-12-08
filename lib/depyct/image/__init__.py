@@ -6,13 +6,14 @@
 """
 """
 from collections import namedtuple
+import ctypes
 from operator import index
 import os
 from struct import Struct
 import warnings
 
 from .mode import *
-from .line import Line, register_image_cls
+from .line import Line
 from depyct import util
 
 
@@ -20,6 +21,10 @@ __all__ = ["ImageSize", "ImageMixin", "Image"]
 
 if util.py3k:
     long = int
+
+
+class _Image(ctypes.Structure):
+    _pack_ = 1
 
 
 class ImageSize(namedtuple("ImageSize", "width height")):
@@ -201,6 +206,8 @@ class ImageMixin(object):
         if self.planar:
             pass
         else:
+            # determine proper mode for each channel
+            # create mode.components images of size == self.size
             return tuple(self[::,::,i] for i in range(self.components))
 
     def pixels(self):
@@ -210,8 +217,8 @@ class ImageMixin(object):
         if self.planar:
             raise TypeError("Planar images do not provide a pixels "
                             "iterator method.")
-        for row in self:
-            for pixel in row:
+        for line in self:
+            for pixel in line:
                 yield pixel
 
     def __iter__(self):
@@ -220,8 +227,8 @@ class ImageMixin(object):
         """
         if self.planar:
             raise TypeError("Planar images do not support iteration.")
-        for i in range(len(self)):
-            yield self[i]
+        for l in self.lines:
+            yield l
 
     def __len__(self):
         """__len__() -> int
@@ -253,10 +260,7 @@ class ImageMixin(object):
                 key += self.size.height
             if key >= self.size.height:
                 raise IndexError("Line index out of range.")
-            bytes_per_line = self.mode.bytes_per_pixel * self.size.width
-            start = key * bytes_per_line
-            end = start + bytes_per_line
-            return Line(self.mode, self.buffer[start:end])
+            return self.lines[key]
         elif isinstance(key, slice):
             #key = (slice(), key)
             return self[::, key]
@@ -283,8 +287,8 @@ class ImageMixin(object):
                 width = len(range(*pixel_idx.indices(self.size.width)))
                 height = len(range(l_start, l_stop, l_step))
                 res = Image(self.mode, size=(width, height))
-                for i, l in enumerate(range(l_start, l_stop, l_step)):
-                    res[i] = self[l][pixel_idx]
+                for i, l in enumerate(self.lines[key[1]]):
+                    res[i] = l[pixel_idx]
                 return res
         raise TypeError("Image indices must be int, slice, or a "
                         "2-tuple composed of ints, slices, or both.")
@@ -300,10 +304,9 @@ class ImageMixin(object):
                 key += self.size.height
             if key >= self.size.height:
                 raise IndexError("Line index out of range.")
-            line = self[key]
             assert (value.size.height == 1 and
                     value.size.width == self.size.width)
-            line[:] = value[0]
+            self[key][:] = value[0]
             return
         elif isinstance(key, slice):
             #key = slice(), key
@@ -314,12 +317,10 @@ class ImageMixin(object):
         if len(key) == 2 and all(isinstance(i, (int, long, slice)) for i in key):
             # pixel (int, int)
             if all(isinstance(i, (int, long)) for i in key):
-                # pixel = self[key]
-                self[key].value = value
+                self.lines[key[0]][key[1]].value = value
             # horizontal image (slice, int)
             elif isinstance(key[1], (int, long)):
-                # line = self[key[1]]
-                self[key[1]][key[0]] = value[0]
+                self.lines[key[1]][key[0]] = value[0]
             # image (slice, slice)
             # vertical image (int, slice)
             else:
@@ -333,9 +334,8 @@ class ImageMixin(object):
                 l_start, l_stop, l_step = key[1].indices(self.size.height)
                 height = len(range(l_start, l_stop, l_step))
                 assert height == value.size.height
-                for i, values in zip(range(l_start, l_stop, l_step), value):
-                    #line = self[i]
-                    self[i][pixel_idx] = values
+                for line, values in zip(self.lines[key[1]], value):
+                    line[pixel_idx] = values
         else:
             raise TypeError("Image indices must be int, slice, or a "
                             "2-tuple composed of ints, slices, or both.")
@@ -434,10 +434,27 @@ class Image(ImageMixin):
                                      self.components, self.mode))
             # initialize buffer to the correct size and color
             self._buffer = util.initialize_buffer(mode, size, color)
+
+            # TODO: externalize this structure building stuff
+            line_struct = type("LineBuffer", (Line,), {
+                    "_fields_": [("pixels", mode.pixel_cls*self.size.width)],
+                    "image_cls": self.__class__,
+                    "mode": self.mode
+                })
+
+            image_struct = type("ImageBuffer", (_Image,),
+                    {"_fields_": [("lines", line_struct*self.size.height)]})
+
+            self._image_data = image_struct.from_buffer(self._buffer)
+
         else:
             raise ValueError("You must minimally specify a source from "
                              "which to build the image or a mode and size "
                              "with which to initialize the buffer.")
+
+    @property
+    def lines(self):
+        return self._image_data.lines
 
     def __str__(self):
         return "{}(mode={}, size={})".format(self.__class__.__name__,
@@ -483,8 +500,3 @@ class Image(ImageMixin):
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
         return format.save(self, filename, **save_options)
-
-
-# FIXME: it might not be a bad idea to make this a globally configurable thing
-#        for the sake of cooperating with other libraries
-register_image_cls(Image)

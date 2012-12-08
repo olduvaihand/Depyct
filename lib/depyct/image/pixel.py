@@ -5,7 +5,7 @@
 # http://www.opensource.org/licenses/mit-license.php
 """
 """
-from struct import Struct
+import ctypes
 
 from depyct import util
 
@@ -22,10 +22,12 @@ if util.py3k:
     long = int
 
 
-class Pixel(object):
+class Pixel(ctypes.Structure):
     """
 
     """
+
+    _pack_ = 1
 
     def __init__(self, buffer):
         self.buffer = buffer
@@ -44,8 +46,19 @@ class Pixel(object):
         return self.mode.components
 
     def __iter__(self):
-        for c in self.value:
-            yield c
+        for c in self._fields_:
+            yield getattr(self, c[0])
+
+    @property
+    def value(self):
+        return list(self)
+
+    @value.setter
+    def value(self, value):
+        value = tuple(value)
+        if len(value) != self.mode.components:
+            raise ValueError
+        self[:] = value
 
     def __getitem__(self, key):
         if isinstance(key, (int, long)):
@@ -53,7 +66,8 @@ class Pixel(object):
                 key += self.mode.components
             if key >= self.mode.components:
                 raise IndexError("Component index is out of range.")
-        return self.value[key]
+            return getattr(self, self._fields_[key][0])
+        return [getattr(self, c[0]) for c in self._fields_[key]]
 
     def __setitem__(self, key, value):
         if isinstance(key, (int, long)):
@@ -61,90 +75,30 @@ class Pixel(object):
                 key += self.mode.components
             if key >= self.mode.components:
                 raise IndexError("Component index is out of range.")
-        cur = list(self.value)
-        cur[key] = value
-        self.value = cur
+            setattr(self, self._fields_[key][0], value)
+        [setattr(self, c[0], value[i])
+                for i, c in enumerate(self._fields_[key])]
 
 
-class component_property(object):
+def pixel_maker(mode):
     """
 
     """
 
-    def __init__(self, index):
-        self.index = index
+    bpc = mode.bits_per_component
+    if mode._is_float:
+        component_type = {#16: ctypes.c_uint16,
+                          32: ctypes.c_float,
+                          64: ctypes.c_double}[bpc]
+    else:
+        component_type = {8: ctypes.c_uint8,
+                          16: ctypes.c_uint16,
+                          32: ctypes.c_uint32,
+                          64: ctypes.c_uint64}[bpc]
 
-    def __get__(self, obj, type=None):
-        if obj is None:
-            return self
-        return obj[self.index]
-
-    def __set__(self, obj, value):
-        obj[self.index] = value
-
-    def __delete__(self, obj):
-        raise AttributeError("Can't delete a component.")
-
-
-class pixel_value_property(object):
-    """
-
-    """
-
-    def unpack(self, buffer):
-        return tuple(buffer)
-
-    def pack(self, *values):
-        return values
-
-    def __get__(self, obj, type=None):
-        if obj is None:
-            return self
-        if util.py27:
-            s = b"".join(obj.buffer[:])
-        else:
-            s = obj.buffer[:]
-        return self.unpack(s)
-
-    def __set__(self, obj, value):
-        value = tuple(value)
-        if len(value) != obj.mode.components:
-            raise ValueError
-        obj.buffer[:] = self.pack(*value)
-
-    def __delete__(self, obj):
-        raise AttributeError("Can't delete a pixel value.")
-
-
-class struct_pixel_value_property(pixel_value_property):
-    """
-
-    """
-
-    def __init__(self, mode):
-        bpc = mode.bits_per_component
-        if mode._is_float:
-            struct_type = {32: "f", 64: "d"}[bpc]
-        else:
-            struct_type = {8: "B", 16: "H", 32: "L", 64: "Q"}[bpc]
-        self.pixel_struct = Struct("{}{}".format(mode.components, struct_type))
-
-    def pack(self, *values):
-        return self.pixel_struct.pack(*values)
-
-    def unpack(self, buffer):
-        return self.pixel_struct.unpack(buffer)
-
-
-def pixel_maker(mode, value_property=None):
-    """
-
-    """
-    if value_property is None:
-        value_property = struct_pixel_value_property(mode)
-    methods = {"value": value_property}
-    for i, name in enumerate(mode.component_names):
-        methods[name] = component_property(i)
-    pixel_cls = type("{}Pixel".format(mode), (Pixel,), methods)
-    pixel_cls.mode = mode
+    attrs = {
+            "_fields_": [(c, component_type) for c in mode.component_names],
+            "mode": mode
+        }
+    pixel_cls = type("{}Pixel".format(mode), (Pixel,), attrs)
     return pixel_cls

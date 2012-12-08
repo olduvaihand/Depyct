@@ -36,9 +36,8 @@ class readonly_property(object):
 def initialize_buffer(mode, size, color=None):
     if color is None:
         color = mode.transparent_color
-    s = mode.pixel_cls.value.pack(*color)
-    initial_value = s * size[0] * size[1]
+    initial_value = color * size[0] * size[1]
     if py27:
-        return memoryview(bytearray(initial_value))
+        return bytearray(initial_value)
     else:
-        return memoryview(array.array("B", initial_value))
+        return array.array("B", initial_value)
