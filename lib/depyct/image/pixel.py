@@ -9,14 +9,7 @@ import ctypes
 
 from depyct import util
 
-
-__all__ = [
-    "Pixel",
-    "component_property",
-    "pixel_value_property",
-    "struct_pixel_value_property",
-    "pixel_maker"
-]
+__all__ = ["Pixel", "pixel_maker"]
 
 if util.py3k:
     long = int
