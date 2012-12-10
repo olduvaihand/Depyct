@@ -96,6 +96,8 @@ True
 from abc import ABCMeta, abstractmethod, abstractproperty
 import re
 
+from depyct import util
+
 
 __all__ = ['register', 'unregister', 'registry', 'FormatBase']
 
@@ -232,7 +234,11 @@ class FormatMeta(ABCMeta):
     def __new__(cls, *args):
         name, bases, attrs = args
         parents = [b for b in bases if isinstance(b, FormatMeta)]
-        attrs["defaults"] = attrs.get("defaults", {}).copy()
+        defaults = {}
+        for p in parents:
+            defaults.update(p.defaults)
+        defaults.update(attrs.get("defaults", {}))
+        attrs["defaults"] = defaults
         cls = super(FormatMeta, cls).__new__(cls, name, bases, attrs)
         if parents:
             if isinstance(cls.extensions, str):
