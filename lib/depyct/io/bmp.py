@@ -54,7 +54,32 @@ def process_image(name):
 """
 import ctypes
 
-#from .format import FormatBase
+from .format import FormatBase
+
+
+def one_of(iterable, message):
+
+    def check(struct, value):
+        if callable(iterable):
+            permitted = iterable()
+        else:
+            permitted = list(iterable)
+        assert value in permitted, \
+                self.message or "value must be one of {}".format(permitted)
+
+    return check
+
+def equals(allowed, message):
+
+    def check(struct, value):
+        if callable(allowed):
+            permitted = allowed()
+        else:
+            permitted = list(allowed)
+        assert value == permitted, \
+                self.message or "value must be one of {}".format(permitted)
+
+
 
 
 class BMPStruct(ctypes.LittleEndianStructure):
@@ -64,6 +89,17 @@ class BMPStruct(ctypes.LittleEndianStructure):
     @classmethod
     def read(cls, im):
         return cls.from_buffer_copy(im.read(ctypes.sizeof(cls)))
+
+    validators = {}
+
+    def validate(self):
+        messages = {}
+        for key, validator in self.validators.items():
+            try:
+                validator(getattr(self, key))
+            except AssertionError as err:
+                messages[key] = err.message
+        return messages
 
 
 class BMPFileHeader(BMPStruct):
@@ -75,6 +111,13 @@ class BMPFileHeader(BMPStruct):
                 ("offset", ctypes.c_uint32),
                 ("dib_header_size", ctypes.c_uint32)]
 
+    validators = {
+        "header": one_of((b"BM", b"BA", b"CI", b"CP", b"IC", b"PT")),
+        "reserved1": equals(0),
+        "reserved2": equals(0),
+        "dib_header_size": one_of((12, 64, 40, 52, 56, 108, 124))
+    }
+
 
 class BMPCoreHeader(BMPStruct):
 
@@ -83,7 +126,15 @@ class BMPCoreHeader(BMPStruct):
                 ("color_planes", ctypes.c_uint16),
                 ("bits_per_pixel", ctypes.c_uint16)]
 
-# assert bits_per_pixel in (1, 4, 8, 24)
+    validators = {
+        "bits_per_pixel": one_of((1, 4, 8, 24)),
+    }
+
+
+COMPRESSION_METHODS = (
+         BI_RGB, BI_RLE8, BI_REL4, BI_BITFIELDS, BI_JPEG, 
+         BI_PNG, BI_ALPHABITFIELDS
+     ) = range(7)
 
 
 class BMPInfoHeader(BMPStruct):
@@ -99,9 +150,12 @@ class BMPInfoHeader(BMPStruct):
                 ("colors", ctypes.c_uint32),
                 ("important_colors", ctypes.c_uint32)]
 
-# assert bits_per_pixel in (0, 1, 4, 8, 16, 24, 32)
-# assert compression in COMPRESSION_METHODS = \
-#     BI_RGB, BI_RLE8, BI_REL4, BI_BITFIELDS, BI_JPEG, BI_PNG  = range(6)
+    validators = {
+        "color_planes": equals(1),
+        "bits_per_pixel": one_of((0, 1, 4, 8, 16, 24, 32)),
+        "compression": one_of((COMPRESSION_METHODS[:6])),
+        "colors": 
+    }
 
 
 class BMPCoreHeader2(BMPInfoHeader):
@@ -213,7 +267,7 @@ class BMPFormat(): #FormatBase):
     extensions = ("bmp", "dib")
     defaults = {}
 
-    def open(self, filename, **options):
+    def open(self, img_cls, filename, **options):
         """
 
         """
@@ -221,7 +275,10 @@ class BMPFormat(): #FormatBase):
         fh = BMPFileHeader.read(im)
         dib_size = fh.dib_header_size
         dib_header = {ctypes.sizeof(h) + 4: h for h in DIB_HEADERS}[dib_size]
-        # if necessary and the header doesn't require it, read in the bitmask
+        dh = dib_header.read(im)
+        # deal with bit masks
+        # determine mode
+        # get size
         # read in the palette
         # calculate rowsize
         # determine if the file is large enough to have valid data
