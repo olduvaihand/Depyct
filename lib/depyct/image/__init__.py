@@ -433,7 +433,7 @@ class Image(ImageMixin):
                                  "one for each component in {}.".format(
                                      self.components, self.mode))
             # initialize buffer to the correct size and color
-            self._buffer = util.initialize_buffer(mode, size, color)
+            _buffer = util.initialize_buffer(mode, size, color)
 
             # TODO: externalize this structure building stuff
             line_struct = type("LineBuffer", (Line,), {
@@ -445,7 +445,8 @@ class Image(ImageMixin):
             image_struct = type("ImageBuffer", (_Image,),
                     {"_fields_": [("lines", line_struct*self.size.height)]})
 
-            self._image_data = image_struct.from_buffer(self._buffer)
+            self._image_data = image_struct.from_buffer(_buffer)
+            self._buffer = memoryview(_buffer)
 
         else:
             raise ValueError("You must minimally specify a source from "
@@ -484,17 +485,17 @@ class Image(ImageMixin):
     def open(cls, filename, format_options={}, **open_options):
         from depyct.io.format import registry
 
-        ext = os.path.ext(filename)
+        ext = os.path.splitext(filename)[1][1:]
         try:
             format = registry[ext](**format_options)
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
-        return format.open(filename, **open_options)
+        return format.open(cls, filename, **open_options)
 
     def save(self, filename, format_options={}, **save_options):
         from depyct.io.format import registry
 
-        ext = os.path.ext(filename)
+        ext = os.path.splitext(filename)[1][1:]
         try:
             format = registry[ext](**format_options)
         except KeyError:
