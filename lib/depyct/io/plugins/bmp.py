@@ -1,4 +1,4 @@
-# depyct/io/bmp.py
+# depyct/io/plugins/bmp.py
 """
 def process_image(name):
     im = open(name, "rb")
@@ -54,7 +54,7 @@ def process_image(name):
 """
 import ctypes
 
-from .format import FormatBase
+from depyct.io.format import FormatBase
 
 
 def one_of(iterable, message):
@@ -112,10 +112,10 @@ class BMPFileHeader(BMPStruct):
                 ("dib_header_size", ctypes.c_uint32)]
 
     validators = {
-        "header": one_of((b"BM", b"BA", b"CI", b"CP", b"IC", b"PT")),
-        "reserved1": equals(0),
-        "reserved2": equals(0),
-        "dib_header_size": one_of((12, 64, 40, 52, 56, 108, 124))
+    #    "header": one_of((b"BM", b"BA", b"CI", b"CP", b"IC", b"PT")),
+    #    "reserved1": equals(0),
+    #    "reserved2": equals(0),
+    #    "dib_header_size": one_of((12, 64, 40, 52, 56, 108, 124))
     }
 
 
@@ -127,7 +127,7 @@ class BMPCoreHeader(BMPStruct):
                 ("bits_per_pixel", ctypes.c_uint16)]
 
     validators = {
-        "bits_per_pixel": one_of((1, 4, 8, 24)),
+    #    "bits_per_pixel": one_of((1, 4, 8, 24)),
     }
 
 
@@ -151,10 +151,10 @@ class BMPInfoHeader(BMPStruct):
                 ("important_colors", ctypes.c_uint32)]
 
     validators = {
-        "color_planes": equals(1),
-        "bits_per_pixel": one_of((0, 1, 4, 8, 16, 24, 32)),
-        "compression": one_of((COMPRESSION_METHODS[:6])),
-        "colors": 
+    #    "color_planes": equals(1),
+    #    "bits_per_pixel": one_of((0, 1, 4, 8, 16, 24, 32)),
+    #    "compression": one_of((COMPRESSION_METHODS[:6])),
+        #"colors": []
     }
 
 
@@ -237,7 +237,7 @@ DIB_HEADERS = [
         BMPCoreHeader, BMPCoreHeader2, 
         BMPInfoHeader, BMPV2InfoHeader,
         BMPV3InfoHeader, BMPV4Header,
-        BMPV5header
+        BMPV5Header
 ]
 
 # assert color_space_type in BMPV5CSTYPES = \

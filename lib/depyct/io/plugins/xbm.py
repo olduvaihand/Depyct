@@ -1,10 +1,10 @@
-# depyct/io/xbm.py
+# depyct/io/plugins/xbm.py
 import mmap
 import re
 import warnings
 
 from depyct.image.mode import L
-from .format import FormatBase
+from depyct.io.format import FormatBase
 
 xbm_header = re.compile(
         br"(?:/\*.*\*/)?"
@@ -74,17 +74,13 @@ class XBMFormat(FormatBase):
                    while raster:
                        byte = raster.pop(0)
                        if raster:
-                           print "normal byte {:x}".format(byte)
                            pixels = [(255 if (1 & (byte>>i)) else 0)
                                      for i in range(8)]
                        else:
-                           print "padding byte {:x} - {}".format(byte, 8-padding)
                            pixels = [(255 if (1 & (byte>>i)) else 0)
                                      for i in range(padding)]
                        data.extend(pixels)
-                   print len(data)
                try:
-                   print len(im.buffer), len(data)
                    im.buffer[:] = bytearray(data)
                except ValueError:
                    raise IOError("Read an unexpected amount of data. "

@@ -303,3 +303,17 @@ class FormatBase(object):
         """
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "save"))
+
+
+def setup_format_plugins():
+    import os
+    from importlib import import_module
+
+    io_directory = os.path.dirname(__file__)
+    for file in os.listdir(os.path.join(io_directory, "plugins")):
+        if file.endswith(".py") and not file.startswith("_"):
+            module = os.path.splitext(os.path.basename(file))[0]
+        else:
+            continue
+        import_module("depyct.io.plugins." + module)
+
