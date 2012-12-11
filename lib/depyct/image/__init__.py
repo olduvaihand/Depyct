@@ -317,7 +317,7 @@ class ImageMixin(object):
         if len(key) == 2 and all(isinstance(i, (int, long, slice)) for i in key):
             # pixel (int, int)
             if all(isinstance(i, (int, long)) for i in key):
-                self.lines[key[0]][key[1]].value = value
+                self.lines[key[1]][key[0]].value = value
             # horizontal image (slice, int)
             elif isinstance(key[1], (int, long)):
                 self.lines[key[1]][key[0]] = value[0]
