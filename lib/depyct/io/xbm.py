@@ -26,6 +26,26 @@ xbm_header = re.compile(
 xbm_data = re.compile(br"(0x[0-9a-fA-F]{2})")
 
 class XBMFormat(FormatBase):
+    """File format plugin for XBM images
+    =================================
+
+    Description of Format
+    =====================
+    XBMs are commonly saved in header files to be included in source.  In
+    addition to the required `width` and `height` preprocessor definitions,
+    they can also optionally have a `x_hot` and `y_hot` pair, which represent
+    the coordinates of the active point on the screen when the image is loaded 
+    into e.g.  an X-11 application.  The image data follows as an array of 
+    chars named `bits`.
+
+    #define {optional_name}_width 16
+    #define {optional_name}_height 16
+    #define {optional_name}_x_hot 1
+    #define {optional_name}_y_hot 1
+    static char _bits[] = {
+    };
+    
+    """
 
     extensions = ("xbm",)
     mimetypes = ("image/x-xbm", "image/x-xbitmap")
@@ -41,28 +61,41 @@ class XBMFormat(FormatBase):
                if m.group("hotspot"):
                    im.info["hotspot"] = (int(m.group("x_hot")),
                                          int(m.group("y_hot")))
-
-               bytes_per_raster = (width + 8) // 8
+               padding = width % 8
+               bytes_per_raster = width // 8 + (1 if padding else 0)
                fp.seek(m.end())
                map = fp.read()
                data = []
                raster = []
                for i, match in enumerate(xbm_data.finditer(map)):
+                   raster.append(int(match.group(0), 16))
                    if len(raster) < bytes_per_raster:
-                       raster.append(int(match.group(0), 16))
                        continue
-                   padding = width % 8
                    while raster:
-                       datum = raster.pop(0)
+                       byte = raster.pop(0)
                        if raster:
-                           data.extend([255 if 1 & datum>>i else 0 for i in range(8)])
+                           print "normal byte {:x}".format(byte)
+                           pixels = [(255 if (1 & (byte>>i)) else 0)
+                                     for i in range(8)]
                        else:
-                           data.extend([255 if 1 & datum>>i else 0 for i in range(8-padding)])
-               return im, fp, data
+                           print "padding byte {:x} - {}".format(byte, 8-padding)
+                           pixels = [(255 if (1 & (byte>>i)) else 0)
+                                     for i in range(padding)]
+                       data.extend(pixels)
+                   print len(data)
+               try:
+                   print len(im.buffer), len(data)
+                   im.buffer[:] = bytearray(data)
+               except ValueError:
+                   raise IOError("Read an unexpected amount of data. "
+                                 "Expected {} bits, received {}.".format(
+                                     width * height, len(data)))
+               else:
+                   return im
             raise IOError("Header data not recognized.")
         except IOError as e:
-            raise IOError("{} does not appear to be an XBM image: {}".format(
-                          filename, e.message))
+            raise IOError("{} does not appear to be a valid XBM image: "
+                          "{}".format(filename, e.message))
 
     def save(self, image, filename, **options):
         warnings.warn("XBM images do not support colors or grayscale. "
@@ -73,10 +106,8 @@ class XBMFormat(FormatBase):
                       "override this behavior, pass a function that "
                       "takes a single pixel as an argument as the `clip` "
                       "option.")
-        print image
         if "clip" not in options:
-            zero = image.mode.transparent_color
-            clip = lambda p: 1 if p.value == zero else 0
+            clip = lambda p: 0 if tuple(p) == image.mode.transparent_color else 1
         else:
             clip = option["clip"]
         fp = open(filename, "wb")
@@ -89,15 +120,13 @@ class XBMFormat(FormatBase):
             fp.write("#define {}_y_hot {}\n".format(label, hotspot[1]))
         fp.write("static char {}_bits[] = {{\n".format(label))
         for i, line in enumerate(image):
-            print line
             raster = []
             start, end = 0, 8
             while start < len(line):
                 byte = 0
                 for j, p in enumerate(line.pixels[start:end]):
-                    print p
                     byte |= (clip(p) << j)
                 raster.append(byte)
                 start, end = end, end + 8
             fp.write(" " + " ".join("0x{:02x}".format(b) for b in raster) + "\n")
-        fp.write("};")
+        fp.write("};\n")
