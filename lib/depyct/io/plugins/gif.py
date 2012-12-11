@@ -9,7 +9,7 @@ class GIFFormat(FormatBase):
 
     """
 
-    extensions = ("gif",)
+    extensions = ("gif", "gfa", "giff")
     mimetypes = ("image/gif",)
 
     def open(self, image_cls, filename, **options):

@@ -47,7 +47,7 @@ class XBMFormat(FormatBase):
     
     """
 
-    extensions = ("xbm",)
+    extensions = ("xbm", "bm", "bitmap")
     mimetypes = ("image/x-xbm", "image/x-xbitmap")
 
     def open(self, image_cls, filename, **options):

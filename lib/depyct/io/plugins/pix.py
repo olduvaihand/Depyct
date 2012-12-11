@@ -1,16 +1,16 @@
-# depyct/io/plugins/xpm.py
+# depyct/io/plugins/pix.py
 
 from depyct.io.format import FormatBase
 
 
-class XPMFormat(FormatBase):
-    """File format plugin for XPM images
+class PIXFormat(FormatBase):
+    """File format plugin for PIX images
     =================================
 
     """
 
-    extensions = ("xpm", "pm")
-    mimetypes = ("image/x-xpm", "image/x-xpixelmap")
+    extensions = ("pix", "matte", "mask", "alpha", "als")
+    mimetypes = ()
 
     def open(self, image_cls, filename, **options):
         raise NotImplementedError

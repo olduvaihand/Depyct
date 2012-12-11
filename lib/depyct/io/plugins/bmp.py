@@ -259,13 +259,13 @@ class RGBQuad(RGBTriple):
     _fields_ = [("reserved", ctypes.c_ubyte)]
 
 
-class BMPFormat(): #FormatBase):
+class BMPFormat(FormatBase):
     """
 
     """
 
-    extensions = ("bmp", "dib")
-    defaults = {}
+    extensions = ("bmp", "dib", "rle", "2bp")
+    mimetype = ("image/x-bmp",)
 
     def open(self, img_cls, filename, **options):
         """

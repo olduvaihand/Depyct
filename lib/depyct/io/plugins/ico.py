@@ -10,7 +10,7 @@ class ICOCURFormat(FormatBase):
     """
 
     extensions = ("ico", "cur")
-    mimetypes = ("image/vnd.microsoft.icon",)
+    mimetypes = ("image/vnd.microsoft.icon", "image/x-icon")
 
     def open(self, image_cls, filename, **options):
         raise NotImplementedError
