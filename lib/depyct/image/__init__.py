@@ -57,6 +57,15 @@ class ImageSize(namedtuple("ImageSize", "width height")):
                             "an __index__ method")
         return super(ImageSize, cls).__new__(cls, width, height)
 
+    @staticmethod
+    def must_be_equal(func):
+        def f(self, other):
+            if self.size == other.size and self.mode is other.mode:
+                return func(self, other)
+            raise ValueError("Images must be the same size and have the same "
+                             "mode.  Received {} and {}.".format(self, other))
+        return f
+
 
 class ImageMixin(object):
     """
@@ -501,3 +510,186 @@ class Image(ImageMixin):
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
         return format.save(self, filename, **save_options)
+
+    @ImageSize.must_be_equal
+    def __lt__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value >= other[x,y].value:
+                    return False
+        return True
+
+    @ImageSize.must_be_equal
+    def __le__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value > other[x,y].value:
+                    return False
+        return True
+
+    @ImageSize.must_be_equal
+    def __eq__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value != other[x,y].value:
+                    return False
+        return True
+
+    @ImageSize.must_be_equal
+    def __ne__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value != other[x,y].value:
+                    return True
+        return True
+
+    @ImageSize.must_be_equal
+    def __ge__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value < other[x,y].value:
+                    return False
+        return True
+
+    @ImageSize.must_be_equal
+    def __gt__(self, other):
+        for y in range(self.size.height):
+            for x in range(self.size.width):
+                if self[x,y].value <= other[x,y].value:
+                    return False
+        return True
+
+    def __hash__(self):
+        pass
+
+    def __nonzero__(self):
+        transparent_color = self.mode.transparent_color
+        if any(p.value != transparent_color for p in self.pixels()):
+            return False
+        return True
+
+    def __add__(self, other):
+        pass
+
+    def __sub__(self, other):
+        pass
+
+    def __mul__(self, other):
+        pass
+
+    def __floordiv__(self, other):
+        pass
+
+    def __mod__(self, other):
+        pass
+
+    def __divmod__(self, other):
+        pass
+
+    def __pow__(self, other, modulo=None):
+        pass
+
+    def __lshift__(self, other):
+        pass
+
+    def __rshift__(self, other):
+        pass
+
+    def __and__(self, other):
+        pass
+
+    def __xor__(self, other):
+        pass
+
+    def __or__(self, other):
+        pass
+
+    def __div__(self, other):
+        pass
+
+    def __truediv__(self, other):
+        pass
+
+    def __radd__(self, other):
+        pass
+
+    def __rsub__(self, other):
+        pass
+
+    def __rmul__(self, other):
+        pass
+
+    def __rfloordiv__(self, other):
+        pass
+
+    def __rmod__(self, other):
+        pass
+
+    def __rdivmod__(self, other):
+        pass
+
+    def __rpow__(self, other, modulo=None):
+        pass
+
+    def __rlshift__(self, other):
+        pass
+
+    def __rrshift__(self, other):
+        pass
+
+    def __rand__(self, other):
+        pass
+
+    def __rxor__(self, other):
+        pass
+
+    def __ror__(self, other):
+        pass
+
+    def __iadd__(self, other):
+        pass
+
+    def __isub__(self, other):
+        pass
+
+    def __imul__(self, other):
+        pass
+
+    def __ifloordiv__(self, other):
+        pass
+
+    def __imod__(self, other):
+        pass
+
+    def __idivmod__(self, other):
+        pass
+
+    def __ipow__(self, other, modulo=None):
+        pass
+
+    def __ilshift__(self, other):
+        pass
+
+    def __irshift__(self, other):
+        pass
+
+    def __iand__(self, other):
+        pass
+
+    def __ixor__(self, other):
+        pass
+
+    def __ior__(self, other):
+        pass
+
+    def __neg__(self):
+        pass
+
+    def __pos__(self):
+        pass
+
+    def __abs__(self):
+        pass
+
+    def __invert__(self):
+        pass
