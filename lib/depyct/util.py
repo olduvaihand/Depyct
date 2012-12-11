@@ -7,6 +7,7 @@
 
 """
 import array
+import struct
 import sys
 
 py3k = sys.version_info >= (3, 0)
@@ -37,6 +38,12 @@ def initialize_buffer(mode, size, color=None):
     if color is None:
         color = mode.transparent_color
     initial_value = color * size[0] * size[1]
+    if mode._is_float:
+        s_code = {32: "f", 64: "d"}[mode.bits_per_component]
+    else:
+        s_code = {8: "B", 16: "H", 32: "L", 64: "Q"}[mode.bits_per_component]
+    struct_format = "{}{}".format(len(initial_value), s_code)
+    initial_value = struct.pack(struct_format, *initial_value)
     if py27:
         return bytearray(initial_value)
     else:

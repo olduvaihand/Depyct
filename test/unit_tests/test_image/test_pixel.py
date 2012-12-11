@@ -8,7 +8,7 @@ from array import array
 from depyct.image.mode import *
 from depyct.testing import DepyctUnitTest
 from depyct import util
-
+import ctypes
 
 class PixelTest(DepyctUnitTest):
 
@@ -17,7 +17,7 @@ class PixelTest(DepyctUnitTest):
         cls.pixels = {}
         for mode in MODES:
             buffer = util.initialize_buffer(mode, (1, 1))
-            cls.pixels[mode] = mode.pixel_cls(buffer)
+            cls.pixels[mode] = mode.pixel_cls.from_buffer(buffer)
 
     def test_component_properties(self):
         for mode, pixel in self.pixels.items():
@@ -38,7 +38,7 @@ class PixelTest(DepyctUnitTest):
 
     def test___getitem__with_slice(self):
         for mode, pixel in self.pixels.items():
-            self.assertEqual(pixel[:], mode.transparent_color[:],
+            self.assertEqual(pixel[:], mode.transparent_color,
                     "Pixel.__getitem__(slice) returns the components at slice "
                     "`slice`.")
 

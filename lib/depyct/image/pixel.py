@@ -22,9 +22,6 @@ class Pixel(ctypes.Structure):
 
     _pack_ = 1
 
-    def __init__(self, buffer):
-        self.buffer = buffer
-
     def __str__(self):
         return "<{}: {}>".format(self.__class__.__name__, tuple(self))
 
@@ -44,11 +41,11 @@ class Pixel(ctypes.Structure):
 
     @property
     def value(self):
-        return list(self)
+        return tuple(self)
 
     @value.setter
     def value(self, value):
-        value = tuple(value)
+        value = list(value)
         if len(value) != self.mode.components:
             raise ValueError
         self[:] = value
@@ -60,7 +57,7 @@ class Pixel(ctypes.Structure):
             if key >= self.mode.components:
                 raise IndexError("Component index is out of range.")
             return getattr(self, self._fields_[key][0])
-        return [getattr(self, c[0]) for c in self._fields_[key]]
+        return tuple(getattr(self, c[0]) for c in self._fields_[key])
 
     def __setitem__(self, key, value):
         if isinstance(key, (int, long)):
