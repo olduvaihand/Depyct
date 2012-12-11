@@ -290,16 +290,16 @@ class BMPFormat(): #FormatBase):
         """
 
         """
-        pass
+        raise NotImplementedError
 
     def check(self):
         """
 
         """
-        pass
+        raise NotImplementedError
 
     def load(self):
         """
 
         """
-        pass
+        raise NotImplementedError

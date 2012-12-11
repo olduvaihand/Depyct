@@ -99,7 +99,7 @@ class XBMFormat(FormatBase):
                       "binary black/white images where the image mode's "
                       "transparent color will be treated as white and "
                       "everything else will be converted to black.  To "
-                      "override this behavior, pass a function that "
+                      "override this behavior, raise pass a function that "
                       "takes a single pixel as an argument as the `clip` "
                       "option.")
         if "clip" not in options:
