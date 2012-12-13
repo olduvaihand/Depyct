@@ -83,3 +83,13 @@ class PNMFormat(NetpbmFormat):
     def save(self, image, filename, **options):
         # figure out which format and dispatch to it
         raise NotImplementedError
+
+
+class PAMFormat(NetpbmFormat):
+    """Plugin for PAM images
+    ========================
+
+    """
+
+    extensions = ("pam",)
+    mimetypes = ("image/x-portable-anymap",)
