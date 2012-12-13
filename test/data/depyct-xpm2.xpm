@@ -1,12 +1,12 @@
 ! XPM2
 23 7 3 1
-a c #ffffff
-b c #ff0000
-c c #000000
-aaccccccccccccccccccccc
-acaccacccccccccccccccac
-acacaaacaaacacacaaacaaa
-acacacccacacacacaccccac
-aacccaacaaaccaacaaaccca
-bbbbbbbbabbbababbbbbbbb
-ccccccccaccccaccccccccc
+  c #ffffff
+= c #ff0000
+o c #000000
+oo                     
+o o  o               o 
+o o ooo ooo o o ooo ooo
+o o o   o o o o o    o 
+oo   oo ooo  oo ooo   o
+========o===o=o========
+        o    o         

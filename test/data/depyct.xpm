@@ -1,17 +1,20 @@
-static char* depyct[] = {
-    /* Values */
-    /* width height colors char per pixel */
-    "23 7 3 1",
-    /* Colors */
-    "a c #ffffff",
-    "b c #ff0000",
-    "c c #000000",
-    /* Pixels */
-    "aaccccccccccccccccccccc",
-    "acaccacccccccccccccccac",
-    "acacaaacaaacacacaaacaaa",
-    "acacacccacacacacaccccac",
-    "aacccaacaaaccaacaaaccca",
-    "bbbbbbbbabbbababbbbbbbb",
-    "ccccccccaccccaccccccccc"
+/* XPM */
+#define depyct_format 1
+#define depyct_width 23
+#define depyct_height 7
+#define depyct_ncolors 3
+#define depyct_chars_per_pixel 1
+static char * depyct_colors[] = {
+"  c #FFFFFF",
+"= c #DD8800",
+"o c #000000"
+};
+static char * depyct_pixels[] = {
+"oo                     ",
+"o o  o               o ",
+"o o ooo ooo o o ooo ooo",
+"o o o   o o  oo o    o ",
+"oo   o  ooo   o ooo   o",
+"========o===o=o========",
+"        o    o         "
 };
