@@ -2,7 +2,7 @@
 static char * depyct_xpm[] = {
 "23 7 3 1",
 "  c #FFFFFF",
-"= c #DD8800",
+"= c #FF0000",
 "# c #000000",
 "##                     ",
 "# #  #               # ",
