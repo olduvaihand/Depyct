@@ -1,0 +1,17 @@
+static char* depyct[] = {
+    /* Values */
+    /* width height colors char per pixel */
+    "23 7 3 1",
+    /* Colors */
+    "a c #ffffff",
+    "b c #ff0000",
+    "c c #000000",
+    /* Pixels */
+    "aaccccccccccccccccccccc",
+    "acaccacccccccccccccccac",
+    "acacaaacaaacacacaaacaaa",
+    "acacacccacacacacaccccac",
+    "aacccaacaaaccaacaaaccca",
+    "bbbbbbbbabbbababbbbbbbb",
+    "ccccccccaccccaccccccccc"
+};
