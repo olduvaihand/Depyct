@@ -48,3 +48,14 @@ def initialize_buffer(mode, size, color=None):
         return bytearray(initial_value)
     else:
         return array.array("B", initial_value)
+
+def pack_bits(iterable):
+    while True:
+        bit = 0
+        try:
+            for i in range(7, -1, -1):
+                bit |= (next(iterable)<<i)
+        except StopIteration:
+            break
+        finally:
+            yield bit
