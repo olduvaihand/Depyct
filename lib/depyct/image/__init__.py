@@ -313,8 +313,13 @@ class ImageMixin(object):
                 key += self.size.height
             if key >= self.size.height:
                 raise IndexError("Line index out of range.")
-            assert (value.size.height == 1 and
-                    value.size.width == self.size.width)
+            # maybe have something that lets us do this with things that
+            # aren't images
+            if isinstance(value, ImageMixin):
+                assert (value.size.height == 1 and
+                        value.size.width == self.size.width)
+            else:
+                assert len(value) == self.size.width
             self[key][:] = value[0]
             return
         elif isinstance(key, slice):
@@ -342,7 +347,13 @@ class ImageMixin(object):
                     pixel_idx = slice(pixel_idx, pixel_idx + 1)
                 l_start, l_stop, l_step = key[1].indices(self.size.height)
                 height = len(range(l_start, l_stop, l_step))
-                assert height == value.size.height
+                # maybe have something that lets us do this with things that
+                # aren't images
+                # do we need to check on the width of each line?
+                # if we do, calculate the width of a line
+                #    1 if key[0] isinstance int,
+                #    len(range(key[0].indices(self.size.width))) if key[0] isinstance slice
+                assert height == len(value)
                 for line, values in zip(self.lines[key[1]], value):
                     line[pixel_idx] = values
         else:
@@ -475,8 +486,11 @@ class Image(ImageMixin):
             return unicode(str(self))
 
     def __repr__(self):
-        return "{}<\n\t{}\n>".format(self.__class__.__name__,
-                                   "\n\t".join(repr(l) for l in self))
+        lines = []
+        for line in self:
+            lines.append("\t" + " ".join(str(p.value) for p in line))
+        return "{}<\n{}\n>".format(self.__class__.__name__,
+                "\n".join(lines))
 
     @util.readonly_property
     def buffer(self):
