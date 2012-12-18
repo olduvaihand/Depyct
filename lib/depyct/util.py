@@ -16,6 +16,12 @@ jython = sys.platform.startswith("java")
 pypy = sys.platform.startswith("pypy")
 
 
+if py27:
+    string_type = basestring
+else:
+    string_type = str
+
+
 class readonly_property(object):
 
     def __init__(self, fget):
@@ -48,14 +54,3 @@ def initialize_buffer(mode, size, color=None):
         return bytearray(initial_value)
     else:
         return array.array("B", initial_value)
-
-def pack_bits(iterable):
-    while True:
-        bit = 0
-        try:
-            for i in range(7, -1, -1):
-                bit |= (next(iterable)<<i)
-        except StopIteration:
-            break
-        finally:
-            yield bit
