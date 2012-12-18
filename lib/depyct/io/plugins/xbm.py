@@ -50,8 +50,7 @@ class XBMFormat(FormatBase):
     extensions = ("xbm", "bm", "bitmap")
     mimetypes = ("image/x-xbm", "image/x-xbitmap")
 
-    def open(self, image_cls, filename, **options):
-        fp = open(filename, "rb")
+    def read(self, image_cls, fp, **options):
         m = xbm_header.match(fp.read(1024))
         try:
             if m:
@@ -93,7 +92,7 @@ class XBMFormat(FormatBase):
             raise IOError("{} does not appear to be a valid XBM image: "
                           "{}".format(filename, e.message))
 
-    def save(self, image, filename, **options):
+    def write(self, image, fp, **options):
         warnings.warn("XBM images do not support colors or grayscale. "
                       "By default, this format will convert images to "
                       "binary black/white images where the image mode's "
@@ -106,7 +105,6 @@ class XBMFormat(FormatBase):
             clip = lambda p: 0 if tuple(p) == image.mode.transparent_color else 1
         else:
             clip = option["clip"]
-        fp = open(filename, "wb")
         label = options.get("label", "")
         fp.write("#define {}_width {}\n".format(label, image.size.width))
         fp.write("#define {}_height {}\n".format(label, image.size.height))

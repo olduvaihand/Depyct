@@ -12,8 +12,8 @@ class XPMFormat(FormatBase):
     extensions = ("xpm", "pm")
     mimetypes = ("image/x-xpm", "image/x-xpixelmap")
 
-    def open(self, image_cls, filename, **options):
+    def read(self, image_cls, fp, **options):
         raise NotImplementedError
 
-    def save(self, image, filename, **options):
+    def write(self, image, fp, **options):
         raise NotImplementedError
