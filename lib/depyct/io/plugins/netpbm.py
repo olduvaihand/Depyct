@@ -1,4 +1,5 @@
 # depyct/io/plugins/netpbm.py
+from itertools import chain
 import re
 import struct
 
@@ -106,32 +107,29 @@ class PBMFormat(NetpbmFormat):
         return data
 
     def save(self, image, filename, **options):
+        clip = options.get("clip", lambda c: c != image.mode.transparent_color)
+        format = options.get("format", "raw")
+        magic_number = "P1" if format == "plain" else "P4"
         with open(filename, "wb") as fp:
-            format = options.get("format", "raw")
+            fp.write(b"P{}\n{} {}\n".format(magic_number, *image.size))
             if format == "plain":
-                self._save_plain(fp, image, **options)
+                self._save_plain(fp, image, clip)
             else:
-                self._save_raw(fp, image, **options)
+                self._save_raw(fp, image, clip)
 
-    def _save_plain(self, fp, image, **options):
-        clip = options.get("clip",
-                           lambda c: c == image.mode.transparent_color)
-        fp.write(b"P1\n{} {}\n".format(*image.size))
+    def _save_plain(self, fp, image, clip):
         for i, line in enumerate(image, 1):
-            fp.write(b" ".join(b"0" if clip(p.value) else b"1" for p in line))
+            fp.write(b" ".join(str(int(clip(p.value))) for p in line))
             if i != image.size.height:
                 fp.write(b"\n")
 
-    def _save_raw(self, fp, image, **options):
-        clip = options.get("clip",
-                           lambda c: c == image.mode.transparent_color)
-        fp.write(b"P4\n{} {}\n".format(*image.size))
+    def _save_raw(self, fp, image, clip):
         nbytes, remainder = divmod(image.size.width, 8)
         if remainder:
             nbytes += 1
         for line in image:
-            bytes = list(pack_bits(clip(p.value) for p in line))
-            fp.write(struct.pack("{}>B".format(nbytes), *bytes))
+            bytes = list(util.pack_bits(clip(p.value) for p in line))
+            fp.write(struct.pack(">{}B".format(nbytes), *bytes))
 
 
 class PGMFormat(NetpbmFormat):
@@ -186,8 +184,38 @@ class PGMFormat(NetpbmFormat):
         return data
 
     def save(self, image, filename, **options):
-        raise NotImplementedError
+        if image.components != 1:
+            # issue a warning about loss of information
+            pass
+        format = options.get("format", "raw")
+        assert format in ("raw", "plain")
+        max_in = 2**image.mode.bits_per_component-1
+        maxval = options.get("maxval", max_in)
+        assert 0 < maxval < 65536
+        magic_number = "P2" if format == "plain" else "P5"
+        width, height = image.size
+        # TODO: have a different scaling function available for different modes
+        scale = lambda i: int(float(i[0]) * maxval / max_in)
+        with open(filename, "wb") as fp:
+            fp.write("{}\n{} {}\n{}\n".format(magic_number, width, height,
+                                              maxval))
+            if format == "plain":
+                self._save_plain(image, fp, maxval, scale)
+            else:
+                self._save_raw(image, fp, maxval, scale)
 
+    def _save_plain(self, image, fp, maxval, scale):
+        for i, line in enumerate(image):
+            fp.write(b" ".join(str(scale(p)) for p in line))
+            if i != image.size.height:
+                fp.write(b"\n")
+
+    def _save_raw(self, image, fp, maxval, scale):
+        struct_format = ">{}{}".format(image.size.width,
+                                       "B" if maxval <= 255 else "H")
+        for i, line in enumerate(image):
+            fp.write(struct.pack(struct_format, *(scale(p) for p in line)))
+        
 
 def group(iterable, chunksize):
     from itertools import izip
@@ -250,7 +278,41 @@ class PPMFormat(NetpbmFormat):
         return data
 
     def save(self, image, filename, **options):
-        raise NotImplementedError
+        if image.components != 1:
+            # issue a warning about loss of information
+            pass
+        format = options.get("format", "raw")
+        assert format in ("raw", "plain")
+        max_in = 2**image.mode.bits_per_component-1
+        maxval = options.get("maxval", max_in)
+        assert 0 < maxval < 65536
+        magic_number = "P3" if format == "plain" else "P6"
+        width, height = image.size
+        # TODO: have a different scaling function available for different modes
+        _scale = lambda i: int(float(i) * maxval / max_in)
+        scale = lambda p: tuple(map(_scale, p))
+        with open(filename, "wb") as fp:
+            fp.write("{}\n{} {}\n{}\n".format(magic_number, width, height,
+                                              maxval))
+            if format == "plain":
+                self._save_plain(image, fp, maxval, scale)
+            else:
+                self._save_raw(image, fp, maxval, scale)
+
+    def _save_plain(self, image, fp, maxval, scale):
+        for i, line in enumerate(image):
+            fp.write(b"\t".join(b" ".join(map(str, scale(p))) for p in line))
+            if i != image.size.height:
+                fp.write(b"\n")
+
+    def _save_raw(self, image, fp, maxval, scale):
+        struct_format = ">{}{}".format(image.size.width * 3,
+                                       "B" if maxval <= 255 else "H")
+        for i, line in enumerate(image):
+            data = []
+            for p in line:
+                data.extend(scale(p))
+            fp.write(struct.pack(struct_format, *data))
 
 
 class PNMFormat(NetpbmFormat):
@@ -280,7 +342,9 @@ class PNMFormat(NetpbmFormat):
 
     def save(self, image, filename, **options):
         # figure out which format and dispatch to it
-        raise NotImplementedError
+        ext = options.get("ext", {1: "pgm", 3: "ppm"}.get(image.components))
+        format = registry[ext](**self.config)
+        return format.save(image, filename, **options)
 
 
 class PAMFormat(NetpbmFormat):
@@ -291,3 +355,30 @@ class PAMFormat(NetpbmFormat):
 
     extensions = ("pam",)
     mimetypes = ("image/x-portable-anymap",)
+
+    def open(self, image_cls, filename, **options):
+        with open(filename, "rb") as fp:
+            magic_number = fp.read(2)
+            if magic_number != b"P7":
+                format = PNMFormat(**self.config)
+                return format.open(image_cls, filename, **options)
+            """
+            headers = defaultdict.fromkeys(list)
+            for line in fp:
+                line = line.strip()
+                header, tokens = line.split(None, 1)
+                headers[header.lower()].append(tokens)
+                if line == "ENDHDR":
+                    break
+            for req, coercion in REQUIRED_HEADERS:
+                try:
+                    headers[req] = coercion(headers[req])
+                except KeyError:
+                    raise IOError("Missing required header {}.".format(req))
+            im = image_cls(headers["tupltype"],
+                           size=(headers["width"], headers["height"]))
+            #read in that data
+            """
+
+    def save(self, image, filename, **options):
+        pass

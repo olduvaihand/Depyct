@@ -102,6 +102,9 @@ from depyct import util
 __all__ = ['register', 'unregister', 'registry', 'FormatBase']
 
 
+#FIXME: add mimetypes support to registry
+
+
 class _Registry(dict):
     """The file format registry.
     """
@@ -184,6 +187,7 @@ class _Registry(dict):
 
     def _trim_extensions(self, extensions):
         """Strip off white space and leading dots from file extension strings.
+
         """
         trimmed = set()
         for ext in set(extensions):
@@ -194,7 +198,9 @@ class _Registry(dict):
 
     def _get_extensions(self, cls, also, only):
         """Determine the extensions to use from the registration arguments.
+
         """
+        # FIXME: use util.string_type
         if only is not None:
             if isinstance(only, str):
                 return self._trim_extensions((only,))
@@ -248,6 +254,14 @@ class FormatMeta(ABCMeta):
         return cls
 
 
+# FIXME: I'm not totally convinced that the abstract base class approach
+#        is warranted here.  For instance, it would be nice to be able to
+#        work directly with file pointers in all situations rather than
+#        handling them within all open and close methods.  This would
+#        make it much simpler to attempt to deal with files coming in off
+#        sockets, for example.
+
+
 #py27
 class FormatBase(object):
 #/py27
@@ -266,33 +280,35 @@ class FormatBase(object):
     if util.py27:
         __metaclass__ = FormatMeta
 
+    extensions = ()
+    mimetypes = ()
     defaults = {}
+    # TODO: implement some consistent error reporting
+    messages = {}
 
     def __init__(self, **options):
         config = self.defaults.copy()
         config.update(options)
         self.config = config
 
-    @abstractproperty
-    def extensions(self):
-        """File extensions associated with the format.
-
-        """
-        raise NotImplementedError("{}.{} is not yet implemented".format(
-                                  self.__class__.__name__, "extensions"))
-
-    @abstractmethod
-    def open(self, filename, **options):
+    def open(self, image_cls, filename, **options):
         """Load an image from `file` and return it.
 
         :param file: object supporting the file protocol
         :rtype: :class:`~depyct.image.ImageMixin`
 
         """
-        raise NotImplementedError("{}.{} is not yet implemented".format(
-                                  self.__class__.__name__, "load"))
+        if isinstance(filename, util.string_type):
+            with open(filename, "rb") as fp:
+                return self.read(image_cls, fp, **options)
+        else:
+            self.read(image_cls, filename, **options)
 
     @abstractmethod
+    def read(self, image_cls, filename, **options):
+        raise NotImplementedError("{}.{} is not yet implemented".format(
+                                  self.__class__.__name__, "read"))
+
     def save(self, image, filename, **options):
         """Save `image` to `file`.
 
@@ -301,8 +317,17 @@ class FormatBase(object):
         :rtype: None
 
         """
+        if isinstance(filename, util.string_type):
+            with open(filename, "wb") as fp:
+                self.write(image, fp, **options)
+        else:
+            # dealing with an open file descriptor already
+            self.write(image, filename, **options)
+
+    @abstractmethod
+    def write(self, image, filename, **options):
         raise NotImplementedError("{}.{} is not yet implemented".format(
-                                  self.__class__.__name__, "save"))
+                                  self.__class__.__name__, "write"))
 
 
 def setup_format_plugins():
@@ -316,4 +341,3 @@ def setup_format_plugins():
         else:
             continue
         import_module("depyct.io.plugins." + module)
-
