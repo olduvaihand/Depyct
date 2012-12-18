@@ -31,6 +31,11 @@ def pack_bits(iterable, endianess="big"):
         finally:
             yield bit
 
+def group(iterable, chunksize):
+    from itertools import izip
+    args = [iter(iterable)] * chunksize
+    return izip(*args)
+
 
 class NetpbmFormat(FormatBase):
     """Base file format plugin for Netpbm images
@@ -142,21 +147,19 @@ class PBMFormat(NetpbmFormat):
 
     def _read_plain(self):
         data = []
-        fp = self.fp
-        for i, line in enumerate(fp): # assert 1
+        for i, line in enumerate(self.fp): # assert 1
             line_data = [(255 if b == "1" else 0,) for b in line.split()] # assert 2
             data.append(line_data)
         return data # assert 3
 
     def _read_raw(self):
         data = []
-        fp = self.fp
         width = self.size[0]
         chunksize, padded = divmod(width, 8)
         if padded:
             chunksize += 1
         while True:
-            chunk = fp.read(chunksize)
+            chunk = self.fp.read(chunksize)
             if not chunk:
                 break
             chunk_data = unpack_bits(chunk)[:width]
@@ -166,24 +169,22 @@ class PBMFormat(NetpbmFormat):
 
     def _write_plain(self):
         clip = self.options["clip"]
-        image = self.image
-        fp = self.fp
-        for i, line in enumerate(image, 1):
-            fp.write(b" ".join(str(int(clip(p.value, self.image)))
+        height = self.image.size.height
+        for i, line in enumerate(self.image, 1):
+            self.fp.write(b" ".join(str(int(clip(p.value, self.image)))
                      for p in line))
             if i != image.size.height:
-                fp.write(b"\n")
+                self.fp.write(b"\n")
 
     def _write_raw(self):
         clip = self.options["clip"]
-        image = self.image
-        bytes_per_line, padded = divmod(image.size.width, 8)
-        fp = self.fp
+        width = self.image.size.width
+        bytes_per_line, padded = divmod(width, 8)
         if padded:
             bytes_per_line += 1
         for line in image:
-            fp.write(struct.pack(">{}B".format(bytes_per_line),
-                     *pack_bits(clip(p.value, image) for p in line)))
+            self.fp.write(struct.pack(">{}B".format(bytes_per_line),
+                     *pack_bits(clip(p.value, self.image) for p in line)))
 
     _header_re = re.compile(_netpbm_header.format(br"14"))
     _format = {b"P1": "plain", b"P4": "raw"}
@@ -203,23 +204,21 @@ class PGMFormat(NetpbmFormat):
 
     def _read_plain(self):
         data = []
-        fp = self.fp
         scale = self.scale_pixel
-        for line in fp:
+        for line in self.fp:
             line_data = [scale((int(i),)) for i in line.split()]
             data.append(line_data)
         return data
 
     def _read_raw(self):
         data = []
-        fp = self.fp
         scale = self.scale_pixel
         width, height = self.size
         bpp = self.mode.bits_per_component // 8
         struct_format = ">{}{}".format(width, "B" if bpp == 1 else "H")
         chunksize = width * bpp
         while True:
-            chunk = fp.read(chunksize)
+            chunk = self.fp.read(chunksize)
             if not chunk:
                 break
             line_data = [scale((p,))
@@ -234,34 +233,26 @@ class PGMFormat(NetpbmFormat):
 
     def _write_plain(self):
         scale = self.scale
-        fp = self.fp
-        image = self.image
-        height = image.size.height
-        for i, line in enumerate(image):
+        height = self.image.size.height
+        for i, line in enumerate(self.image):
             # FIXME: this is incorrect
-            fp.write(b" ".join(str(scale(p.l)) for p in line))
+            self.fp.write(b" ".join(str(scale(p.l)) for p in line))
             if i != height:
                 fp.write(b"\n")
 
     def _write_raw(self):
         scale = self.scale
-        image = self.image
-        struct_format = ">{}{}".format(image.size.width,
+        struct_format = ">{}{}".format(self.image.size.width,
                                        "B" if self.maxval <= 255 else "H")
-        fp = self.fp
-        for i, line in enumerate(image):
-            fp.write(struct.pack(struct_format, *[scale(p.l) for p in line]))
+        for i, line in enumerate(self.image):
+            # FIXME: this is incorrect
+            self.fp.write(struct.pack(struct_format, *[scale(p.l)
+                for p in line]))
 
     _header_re = re.compile(_netpbm_header.format(br"25") + _netpbm_maxval)
     _format = {b"P2": "plain", b"P5": "raw"}
     _magic_number = {"plain": b"P2", "raw": b"P5"}
         
-
-def group(iterable, chunksize):
-    from itertools import izip
-    args = [iter(iterable)] * chunksize
-    return izip(*args)
-
 
 class PPMFormat(NetpbmFormat):
     """Plugin for PPM images
@@ -276,9 +267,8 @@ class PPMFormat(NetpbmFormat):
 
     def _read_plain(self):
         data = []
-        fp = self.fp
         scale = self.scale_pixel
-        for line in fp:
+        for line in self.fp:
             pixels = group(line.split(), 3)
             line_data = [scale(map(int, p)) for p in pixels]
             data.append(line_data)
@@ -286,14 +276,13 @@ class PPMFormat(NetpbmFormat):
 
     def _read_raw(self):
         data = []
-        fp = self.fp
         scale = self.scale_pixel
         bpp = self.mode.bits_per_component // 8
         width, height = self.size
         struct_format = ">{}{}".format(width*3, "B" if bpp == 1 else "H")
         chunksize = width * 3 * bpp
         while True:
-            chunk = fp.read(chunksize)
+            chunk = self.fp.read(chunksize)
             if not chunk:
                 break
             pixels = group(struct.unpack(struct_format, chunk), 3)
@@ -304,10 +293,9 @@ class PPMFormat(NetpbmFormat):
     def _write_plain(self):
         scale = self.scale_pixel
         height = self.image.size.height
-        fp = self.fp
-        image = self.image
-        for i, line in enumerate(image):
-            fp.write(b"\t".join(b" ".join(map(str, scale(p))) for p in line))
+        for i, line in enumerate(self.image):
+            self.fp.write(b"\t".join(b" ".join(map(str, scale(p)))
+                          for p in line))
             if i != height:
                 fp.write(b"\n")
 
@@ -315,13 +303,11 @@ class PPMFormat(NetpbmFormat):
         scale = self.scale_pixel
         struct_format = ">{}{}".format(self.image.size.width * 3,
                                        "B" if self.maxval <= 255 else "H")
-        image = self.image
-        fp = self.fp
-        for i, line in enumerate(image):
+        for i, line in enumerate(self.image):
             data = []
             for p in line:
                 data.extend(scale(p))
-            fp.write(struct.pack(struct_format, *data))
+            self.fp.write(struct.pack(struct_format, *data))
 
     _header_re = re.compile(_netpbm_header.format(br"36") + _netpbm_maxval)
     _format = {b"P3": "plain", b"P6": "raw"}

@@ -12,8 +12,11 @@ class PNGFormat(FormatBase):
     extensions = ("png",)
     mimetypes = ("image/png",)
 
-    def read(self, image_cls, fp, **options):
+    def read(self):
         raise NotImplementedError
 
-    def write(self, image, fp, **options):
+    def load(self):
+        raise NotImplementedError
+
+    def write(self):
         raise NotImplementedError

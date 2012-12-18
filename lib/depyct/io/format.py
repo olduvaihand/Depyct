@@ -283,49 +283,70 @@ class FormatBase(object):
     extensions = ()
     mimetypes = ()
     defaults = {}
-    # TODO: implement some consistent error reporting
     messages = {}
 
-    def __init__(self, **options):
+    def __init__(self, image_cls, **options):
+        self.image_cls = image_cls
+        self.config = self.update_config(**options)
+
+    def update_config(self, **options):
         config = self.defaults.copy()
         config.update(options)
-        self.config = config
+        return config
 
-    def open(self, image_cls, filename, **options):
+    def fail(self, message, **kwargs):
+        """Raise an error.
+
+        """
+        # FIXME: it might be nice to fix the stack trace so that it starts in
+        #        the calling context rather than here
+        try:
+            m = self.messages[message].format(**kwargs)
+            raise FormatError(m)
+        except KeyError:
+            raise IOError(message)
+
+    def open(self, source):
         """Load an image from `file` and return it.
 
-        :param file: object supporting the file protocol
+        :param source: string filename or object supporting file protocol
         :rtype: :class:`~depyct.image.ImageMixin`
 
         """
-        if isinstance(filename, util.string_type):
-            with open(filename, "rb") as fp:
-                return self.read(image_cls, fp, **options)
+        if isinstance(source, util.string_type):
+            self.fp = open(source, "rb") as fp
         else:
-            self.read(image_cls, filename, **options)
+            self.fp = source
+        self.read()
 
     @abstractmethod
-    def read(self, image_cls, filename, **options):
+    def read(self):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "read"))
 
-    def save(self, image, filename, **options):
+    @abstractmethod
+    def load(self):
+        raise NotImplementedError("{}.{} is not yet implemented".format(
+                                  self.__class__.__name__, "load"))
+
+    def save(self, image, destination):
         """Save `image` to `file`.
 
         :type image: :class:`~depyct.image.ImageMixin`
-        :param file: object supporting the file protocol
+        :param destination: string filename or object supporting file protocol
         :rtype: None
 
         """
-        if isinstance(filename, util.string_type):
-            with open(filename, "wb") as fp:
-                self.write(image, fp, **options)
+        self.image = image
+        if isinstance(destination, util.string_type):
+            self.fp = open(destination, "wb") as fp
         else:
             # dealing with an open file descriptor already
-            self.write(image, filename, **options)
+            self.fp = destination
+        self.write()
 
     @abstractmethod
-    def write(self, image, filename, **options):
+    def write(self):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "write"))
 

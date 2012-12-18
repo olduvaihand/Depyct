@@ -12,8 +12,11 @@ class JPEGFormat(FormatBase):
     extensions = ("jpg", "jpeg", "jpe", "jif", "jfif", "jfi")
     mimetypes = ("image/jpeg",)
 
-    def read(self, image_cls, fp, **options):
+    def read(self):
         raise NotImplementedError
 
-    def write(self, image, fp, **options):
+    def load(self):
+        raise NotImplementedError
+
+    def write(self):
         raise NotImplementedError

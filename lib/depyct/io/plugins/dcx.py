@@ -12,8 +12,11 @@ class DCXFormat(FormatBase):
     extensions = ("dcx",)
     mimetypes = ("image/x-dcx",)
 
-    def read(self, image_cls, fp, **options):
+    def read(self):
         raise NotImplementedError
 
-    def write(self, image, fp, **options):
+    def load(self):
+        raise NotImplementedError
+
+    def write(self):
         raise NotImplementedError

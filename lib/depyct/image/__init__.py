@@ -505,25 +505,25 @@ class Image(ImageMixin):
         return self._mode
 
     @classmethod
-    def open(cls, filename, format_options={}, **open_options):
+    def open(cls, filename, **options):
         from depyct.io.format import registry
 
         ext = os.path.splitext(filename)[1][1:]
         try:
-            format = registry[ext](**format_options)
+            format = registry[ext](cls, **options)
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
-        return format.open(cls, filename, **open_options)
+        return format.open(cls, filename)
 
-    def save(self, filename, format_options={}, **save_options):
+    def save(self, filename, **options):
         from depyct.io.format import registry
 
         ext = os.path.splitext(filename)[1][1:]
         try:
-            format = registry[ext](**format_options)
+            format = registry[ext](self.__class__, **options)
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
-        return format.save(self, filename, **save_options)
+        return format.save(self, filename)
 
     @ImageSize.must_be_equal
     def __lt__(self, other):
@@ -553,8 +553,8 @@ class Image(ImageMixin):
     def __ne__(self, other):
         for y in range(self.size.height):
             for x in range(self.size.width):
-                if self[x,y].value != other[x,y].value:
-                    return True
+                if self[x,y].value == other[x,y].value:
+                    return False
         return True
 
     @ImageSize.must_be_equal

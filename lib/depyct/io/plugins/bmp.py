@@ -267,7 +267,7 @@ class BMPFormat(FormatBase):
     extensions = ("bmp", "dib", "rle", "2bp")
     mimetype = ("image/x-bmp",)
 
-    def read(self, image_cls, fp, **options):
+    def read(self):
         """
 
         """
@@ -286,7 +286,7 @@ class BMPFormat(FormatBase):
         # if necessary, read in icc profile data
         
 
-    def write(self, image, fp, **options):
+    def write(self):
         """
 
         """

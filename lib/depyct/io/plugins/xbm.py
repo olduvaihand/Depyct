@@ -1,5 +1,6 @@
 # depyct/io/plugins/xbm.py
 import mmap
+import os
 import re
 import warnings
 
@@ -23,7 +24,8 @@ xbm_header = re.compile(
         br"\s*[A-Za-z\d \t]*_bits\[\][ \t]+=[ \t]+"
    )
 
-xbm_data = re.compile(br"(0x[0-9a-fA-F]{2})")
+x10_data_re = re.compile(br"(0x[0-9a-fA-F]{4})")
+x11_data_re = re.compile(br"(0x[0-9a-fA-F]{2})")
 
 class XBMFormat(FormatBase):
     """File format plugin for XBM images
@@ -49,24 +51,33 @@ class XBMFormat(FormatBase):
 
     extensions = ("xbm", "bm", "bitmap")
     mimetypes = ("image/x-xbm", "image/x-xbitmap")
+    defaults = {
+        "clip": lambda p, im: int(tuple(p) != im.mode.transparent_color),
+    }
+    messages = {}
 
-    def read(self, image_cls, fp, **options):
-        m = xbm_header.match(fp.read(1024))
+
+    def read(self):
+        m = xbm_header.match(self.fp.read(1024))
+        # FIXME: use fail instead of these embedded try blocks
         try:
             if m:
                width = int(m.group("width"))
                height = int(m.group("height"))
-               im = image_cls(L, size=(width, height))
+               im = self.image_cls(L, size=(width, height))
                if m.group("hotspot"):
                    im.info["hotspot"] = (int(m.group("x_hot")),
                                          int(m.group("y_hot")))
                padding = width % 8
                bytes_per_raster = width // 8 + (1 if padding else 0)
-               fp.seek(m.end())
-               map = fp.read()
+               self.fp.seek(m.end())
+               # FIXME: this is dangerous.  you should be reading by chunk
+               map = self.fp.read()
                data = []
                raster = []
-               for i, match in enumerate(xbm_data.finditer(map)):
+               # FIXME: sniff to determine which data_re should be used
+               for i, match in enumerate(x11_data_re.finditer(map)):
+                   # FIXME: is this naming correct?
                    raster.append(int(match.group(0), 16))
                    if len(raster) < bytes_per_raster:
                        continue
@@ -92,7 +103,10 @@ class XBMFormat(FormatBase):
             raise IOError("{} does not appear to be a valid XBM image: "
                           "{}".format(filename, e.message))
 
-    def write(self, image, fp, **options):
+    def load(self):
+        pass
+
+    def write(self):
         warnings.warn("XBM images do not support colors or grayscale. "
                       "By default, this format will convert images to "
                       "binary black/white images where the image mode's "
@@ -101,26 +115,29 @@ class XBMFormat(FormatBase):
                       "override this behavior, raise pass a function that "
                       "takes a single pixel as an argument as the `clip` "
                       "option.")
-        if "clip" not in options:
-            clip = lambda p: 0 if tuple(p) == image.mode.transparent_color else 1
+        clip = self.config["clip"]
+        if hasattr(self, "filename"):
+            label = os.path.splitext(os.path.basename(self.filename))[0]
         else:
-            clip = option["clip"]
-        label = options.get("label", "")
-        fp.write("#define {}_width {}\n".format(label, image.size.width))
-        fp.write("#define {}_height {}\n".format(label, image.size.height))
-        if image.info.get("hotspot"):
+            label = ""
+        width, height = self.image.size
+        self.fp.write(b"#define {}_width {}\n".format(label, width))
+        self.fp.write(b"#define {}_height {}\n".format(label, height))
+        if self.image.info.get("hotspot"):
             hotspot = image.info["hotspot"]
-            fp.write("#define {}_x_hot {}\n".format(label, hotspot[0]))
-            fp.write("#define {}_y_hot {}\n".format(label, hotspot[1]))
-        fp.write("static char {}_bits[] = {{\n".format(label))
-        for i, line in enumerate(image):
+            self.fp.write(b"#define {}_x_hot {}\n".format(label, hotspot[0]))
+            self.fp.write(b"#define {}_y_hot {}\n".format(label, hotspot[1]))
+        self.fp.write(b"static char {}_bits[] = {{\n".format(label))
+        for i, line in enumerate(self.image):
             raster = []
             start, end = 0, 8
             while start < len(line):
                 byte = 0
                 for j, p in enumerate(line.pixels[start:end]):
-                    byte |= (clip(p) << j)
+                    byte |= (clip(p, self.image) << j)
                 raster.append(byte)
                 start, end = end, end + 8
-            fp.write(" " + " ".join("0x{:02x}".format(b) for b in raster) + "\n")
-        fp.write("};\n")
+            self.fp.write(
+                b" " + b" ".join(b"0x{:02x}".format(b) for b in raster) + b"\n"
+            )
+        self.fp.write(b"};\n")
