@@ -513,7 +513,7 @@ class Image(ImageMixin):
             format = registry[ext](cls, **options)
         except KeyError:
             raise IOError("{} is not a recognized image format.".format(ext))
-        return format.open(cls, filename)
+        return format.open(filename)
 
     def save(self, filename, **options):
         from depyct.io.format import registry

@@ -314,10 +314,10 @@ class FormatBase(object):
 
         """
         if isinstance(source, util.string_type):
-            self.fp = open(source, "rb") as fp
+            self.fp = open(source, "rb")
         else:
             self.fp = source
-        self.read()
+        return self.read()
 
     @abstractmethod
     def read(self):
@@ -339,7 +339,7 @@ class FormatBase(object):
         """
         self.image = image
         if isinstance(destination, util.string_type):
-            self.fp = open(destination, "wb") as fp
+            self.fp = open(destination, "wb")
         else:
             # dealing with an open file descriptor already
             self.fp = destination
