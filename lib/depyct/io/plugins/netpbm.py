@@ -44,15 +44,11 @@ class NetpbmFormat(FormatBase):
     """
 
 
-    def read(self, image_cls, fp, **options):
-        read_options = self.config.copy()
-        read_options.update(**options)
-        self.options = read_options
-        self.fp = fp
+    def read(self):
         m = self._header_re.match(fp.read(512))
-        fp.seek(m.end())
         if m is None:
             raise IOError("not a valid {}")
+        self.fp.seek(m.end())
         magic_number = m.group("magic_number")
         self.size = int(m.group("width")), int(m.group("height"))
         if "maxval" in m.groupdict():
@@ -81,25 +77,20 @@ class NetpbmFormat(FormatBase):
         im[:] = data
         return im
 
-    def write(self, image, fp, **options):
-        self.fp = fp
-        self.image = image
-        write_options = self.config.copy()
-        write_options.update(**options)
-        self.options = write_options
-        format = write_options.get("format", "raw")
+    def write(self):
+        format = self.config["format"]
         magic_number = self._magic_number.get(format)
         header_format = b"{}\n{} {}\n"
-        header = (magic_number,) + image.size
+        header = (magic_number,) + self.image.size
         if magic_number not in (b"P1", b"P4"):
-            max = 2**image.mode.bits_per_component - 1
-            self.maxval = maxval = write_options.get("maxval", max)
-            bit_depth = image.mode.bits_per_component
+            max = 2**self.image.mode.bits_per_component - 1
+            self.maxval = maxval = self.config.get("maxval", max)
+            bit_depth = self.image.mode.bits_per_component
             self.scale = lambda i: int(float(i)*((2**bit_depth) - 1) / maxval)
             self.scale_pixel = lambda p: tuple(map(self.scale, p))
             header_format += b"{}\n"
             header += (maxval,)
-        fp.write(header_format.format(*header))
+        self.fp.write(header_format.format(*header))
         try:
             # have all the info and the fp attached to the format
             data = getattr(self, "_write_{}".format(format))()
@@ -173,7 +164,7 @@ class PBMFormat(NetpbmFormat):
         for i, line in enumerate(self.image, 1):
             self.fp.write(b" ".join(str(int(clip(p.value, self.image)))
                      for p in line))
-            if i != image.size.height:
+            if i != height:
                 self.fp.write(b"\n")
 
     def _write_raw(self):
@@ -182,7 +173,7 @@ class PBMFormat(NetpbmFormat):
         bytes_per_line, padded = divmod(width, 8)
         if padded:
             bytes_per_line += 1
-        for line in image:
+        for line in self.image:
             self.fp.write(struct.pack(">{}B".format(bytes_per_line),
                      *pack_bits(clip(p.value, self.image) for p in line)))
 
