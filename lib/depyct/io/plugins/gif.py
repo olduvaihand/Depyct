@@ -45,10 +45,31 @@ class GraphicControlExtension(ctypes.LittleEndianStructure):
                 ("disposal_method", ctypes.c_uint8, 3),
                 ("user_input_flag", ctypes.c_uint8, 1),
                 ("transparent_color_flag", ctypes.c_uint8, 1),
-                ("transparent_color_index", ctypes.c_byte)]
+                ("transparent_color_index", ctypes.c_byte),
+                ("terminator", ctypes.c_byte)]
 
 
-TERMINATOR = b"\3b"
+class PlainTextExtension(ctypes.LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [("size", ctypes.c_byte),
+                ("x", ctypes.c_uint16),
+                ("y", ctypes.c_uint16),
+                ("width", ctypes.c_uint16),
+                ("height", ctypes.c_uint16),
+                ("cell_width", ctypes.c_byte),
+                ("cell_height", ctypes.c_byte),
+                ("foreground_color_index", ctypes.c_byte),
+                ("background_color_index", ctypes.c_byte)]
+
+
+class ApplicationExtension(ctypes.LittleEndianStructure):
+    _pack_ = 1
+    _fields_ = [("size", ctypes.c_byte),
+                ("identifier", ctypes.c_byte * 8),
+                ("authentication_code", ctypes.c_byte * 3)]
+
+
+TRAILER = b"\x3b"
 IMAGE_SEPARATOR = b"\x2c"
 EXTENSION = b"\x21"
 GRAPHIC_CONTROL = b"\xf9"
@@ -80,7 +101,12 @@ class GIFFormat(FormatBase):
             self.gct = GlobalColorTable.from_buffer_copy(self.fp.read(table_bytes))
         self.size = self.logical_screen.width, self.logical_screen.height
         self.im = self.image_cls(RGB, size=self.size)
+        self.comments = []
+        self.plain_text = []
+        self.image_data = []
+        self.application_data = []
         self.load()
+        return self
 
     def load(self):
         while True:
@@ -89,33 +115,68 @@ class GIFFormat(FormatBase):
             if block_intro == EXTENSION:
                 label = self.fp.read(1)
                 if label == GRAPHIC_CONTROL:
-                    pass
+                    size = ord(self.fp.read(1))
+                    # not certain this is actually useful
+                    self.fp.read(size + 1)
                 elif label == COMMENT:
-                    pass
+                    comment = []
+                    while True:
+                        size = ord(self.fp.read(1))
+                        if size == 0:
+                            break
+                        comment.append(self.fp.read(size))
+                    # FIXME: do something with this?
+                    comment = b"".join(comment)
+                    self.comments.append(comment)
                 elif label == PLAIN_TEXT:
-                    pass
+                    pte = PlainTextExtension.from_buffer_copy(
+                            self.fp.read(ctypes.sizeof(PlainTextExtension)))
+                    text = []
+                    while True:
+                        size = ord(self.fp.read(1))
+                        if size == 0:
+                            break
+                        text.append(self.fp.read(size))
+                    # FIXME: do something with this?
+                    text = b"".join(text)
+                    self.plain_text.append(text)
                 elif label == APPLICATION:
-                    pass
+                    ae = ApplicationExtension.from_buffer_copy(
+                            self.fp.read(ctypes.sizeof(ApplicationExtension)))
+                    application_data = []
+                    while True:
+                        size = ord(self.fp.read(1))
+                        if size == 0:
+                            break
+                        # FIXME: do something with this?
+                        application_data.append(self.fp.read(size))
+                    application_data = b"".join(application_data)
+                    self.application_data.append(application_data)
                 else:
-                    raise IOError("Unrecognized extension block label.")
-
+                    raise IOError("Unrecognized extension block label {} {}.".format(block_intro, label))
             elif block_intro == IMAGE_SEPARATOR:
-        #       if block has graphic control extension:
-        #           read gce
-        #       if block is table based image:
-        #           read image descriptor
-        #           if local color table:
-        #               push global color table
-        #               read local color table
-        #           read image data
-        #           pop local color table
-        #       else:
-        #          read plain text extension
-            elif block_intro == TERMINATOR:
-                print "hit the terminator"
+                image_descriptor = ImageDescriptor.from_buffer_copy(
+                        self.fp.read(ctypes.sizeof(ImageDescriptor)))
+                if image_descriptor.local_color_table_flag:
+                    size = self.image_descriptor.local_color_table_size
+                    table_bytes = 3 * 2**(size+1)
+                    LocalColorTable = RGBTriple * size
+                    color_table = LocalColorTable.from_buffer_copy(
+                                      self.fp.read(table_bytes))
+                lzw_minimum_code_size = self.fp.read(1)
+                image_data = []
+                while True:
+                    size = ord(self.fp.read(1))
+                    if size == 0:
+                        break
+                    image_data.append(self.fp.read(size))
+                image_data = b"".join(image_data)
+                self.image_data.append(image_data)
+                color_table = self.global_color_table
+            elif block_intro == TRAILER:
                 break
             else:
-                raise IOError("Unrecognized block.")
+                raise IOError("Unrecognized block {}.".format(block_intro))
 
     def write(self):
         raise NotImplementedError
