@@ -324,7 +324,6 @@ class FormatBase(object):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "read"))
 
-    @abstractmethod
     def load(self):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "load"))

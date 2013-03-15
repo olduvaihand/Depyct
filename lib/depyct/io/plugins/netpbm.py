@@ -43,6 +43,8 @@ class NetpbmFormat(FormatBase):
 
     """
 
+    defaults = {"format": "raw", "maxval": 255}
+
 
     def read(self):
         m = self._header_re.match(fp.read(512))
@@ -64,7 +66,7 @@ class NetpbmFormat(FormatBase):
                 mode = L16
             bit_depth = mode.bits_per_component
             self.scale = lambda i: int(float(i)*((2**bit_depth) - 1) / maxval)
-            self.scale_pixel = lambda p: tuple(map(self.scale, p))
+            self.scale_pixel = lambda p: tuple(map(self.scale, p[:mode.components]))
         else:
             mode = L
         self.mode = mode
@@ -86,8 +88,14 @@ class NetpbmFormat(FormatBase):
             max = 2**self.image.mode.bits_per_component - 1
             self.maxval = maxval = self.config.get("maxval", max)
             bit_depth = self.image.mode.bits_per_component
+
+            # FIXME: have something that deals with conversion
+            # from one color space to another
             self.scale = lambda i: int(float(i)*((2**bit_depth) - 1) / maxval)
-            self.scale_pixel = lambda p: tuple(map(self.scale, p))
+            if self.image.components <= 2:
+                self.scale_pixel = lambda p: tuple(map(self.scale, p[:1]))
+            else:
+                self.scale_pixel = lambda p: tuple(map(self.scale, p[:3]))
             header_format += b"{}\n"
             header += (maxval,)
         self.fp.write(header_format.format(*header))
@@ -155,20 +163,19 @@ class PBMFormat(NetpbmFormat):
                 break
             chunk_data = unpack_bits(chunk)[:width]
             data.append(chunk_data)
-        print data
         return data
 
     def _write_plain(self):
-        clip = self.options["clip"]
+        clip = self.config["clip"]
         height = self.image.size.height
         for i, line in enumerate(self.image, 1):
-            self.fp.write(b" ".join(str(int(clip(p.value, self.image)))
+            self.fp.write(b" ".join(bytes(int(clip(p.value, self.image)))
                      for p in line))
             if i != height:
                 self.fp.write(b"\n")
 
     def _write_raw(self):
-        clip = self.options["clip"]
+        clip = self.config["clip"]
         width = self.image.size.width
         bytes_per_line, padded = divmod(width, 8)
         if padded:
@@ -227,7 +234,7 @@ class PGMFormat(NetpbmFormat):
         height = self.image.size.height
         for i, line in enumerate(self.image):
             # FIXME: this is incorrect
-            self.fp.write(b" ".join(str(scale(p.l)) for p in line))
+            self.fp.write(b" ".join(bytes(scale(p.l)) for p in line))
             if i != height:
                 fp.write(b"\n")
 
@@ -285,7 +292,7 @@ class PPMFormat(NetpbmFormat):
         scale = self.scale_pixel
         height = self.image.size.height
         for i, line in enumerate(self.image):
-            self.fp.write(b"\t".join(b" ".join(map(str, scale(p)))
+            self.fp.write(b"\t".join(b" ".join(map(bytes, scale(p)))
                           for p in line))
             if i != height:
                 fp.write(b"\n")
@@ -298,7 +305,11 @@ class PPMFormat(NetpbmFormat):
             data = []
             for p in line:
                 data.extend(scale(p))
-            self.fp.write(struct.pack(struct_format, *data))
+            try:
+                self.fp.write(struct.pack(struct_format, *data))
+            except Exception as err:
+                print(len(data))
+                raise
 
     _header_re = re.compile(_netpbm_header.format(br"36") + _netpbm_maxval)
     _format = {b"P3": "plain", b"P6": "raw"}

@@ -49,7 +49,8 @@ class Line(ctypes.Structure):
                 res[i, 0].value = pixel.value
             return res
         raise TypeError("Image indices must be int, slice, or a "
-                        "two-tuple composed of ints, slices, or both. {}".format(type(key)))
+                        "two-tuple composed of ints, slices, or "
+                        "both. {}".format(type(key)))
 
     def __setitem__(self, key, value):
         if isinstance(key, (int, long)):
@@ -61,7 +62,9 @@ class Line(ctypes.Structure):
         elif isinstance(key, slice):
             p_start, p_stop, p_step = key.indices(len(self))
             offsets = len(range(p_start, p_stop, p_step))
-            assert len(value) == offsets
+            assert len(value) == offsets, ("Didn't get the right amount of "
+                                           "data: {} != {}".format(len(value),
+                                                                   offsets))
             for p, v in zip(self.pixels[key], value):
                 p.value = v
         else:
