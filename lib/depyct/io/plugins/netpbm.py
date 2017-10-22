@@ -128,18 +128,18 @@ class PBMFormat(NetpbmFormat):
         "clip": lambda c, image: c != image.mode.transparent_color,
     }
     messages = {
-        "bad_line_data": 
+        "bad_line_data":
             "There should be no characters other than `1`, `0`, "
             "` `, and `\t` on a given scan line in pbm raster data. "
             "Check line {} of input.",
-        "incorrect_width": 
+        "incorrect_width":
             "Incorrect amount of pixel data read.  Got {} pixels on "
             "line {}, expected {}.",
-        "incorrect_height": 
+        "incorrect_height":
             "Incorrect number of lines read.  Got {}, expected "
             "{}."
-    }       
-            
+    }
+
     # assert re.match("^(?:([ \t10]+)+)$", line), .format(i)
     # assert len(line_data) == width, .format(len(line_data), i, width))
     # assert len(data) == height, .format(len(data), height))
@@ -250,7 +250,7 @@ class PGMFormat(NetpbmFormat):
     _header_re = re.compile(_netpbm_header.format(br"25") + _netpbm_maxval)
     _format = {b"P2": "plain", b"P5": "raw"}
     _magic_number = {"plain": b"P2", "raw": b"P5"}
-        
+
 
 class PPMFormat(NetpbmFormat):
     """Plugin for PPM images

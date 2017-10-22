@@ -93,8 +93,10 @@ True
 >>> original == copy
 True
 """
-from abc import ABCMeta, abstractmethod, abstractproperty
+import abc
+import copy
 import re
+import warnings
 
 from depyct import util
 
@@ -118,32 +120,29 @@ class _Registry(dict):
             :param:`cls` must have an :attr:`extensions` attribute that is an
             iterable returning file extensions as strings. Whitespace and
             leading and trailing `.`\ s will be trimmed, in that order.
-        
+
         :param:also:
-            A string or iterable of strings that will be used **in addition**
-            to those found on :param:`cls`.
+            An iterable of strings that will be used **in addition**
+            to those found on :param:`cls`. Cannot be used with :param:`only`.
 
         :param:only:
-            A string or iterable of strings that will be used **instead of**
-            those found on :param:`cls`.
+            An iterable of strings that will be used **instead of**
+            those found on :param:`cls`. Cannot be used with :param:`also`.
 
         :rtype: None
 
-        :raises: TypeError if extensions is not a string or iterable of
-            strings and neither is :attr:`cls.extensions`
-        :raises: AttributeError if :param:`only` is None and :param:`cls`
-            lacks a propert `extensions` attribute.
+        :raises: TypeError if extensions is not an iterable of
+            strings and neither is :attr:`cls.extensions`.
         """
-        extensions = self._get_extensions(cls, also, only)
-        
-        if all(isinstance(ext, str) for ext in extensions):
-            mapping = {ext: cls for ext in extensions}
+        to_add = self._get_extensions(cls, also, only)
+
+        if all(isinstance(ext, str) for ext in to_add):
+            mapping = {ext: cls for ext in to_add}
             self.update(mapping)
         else:
-            raise TypeError("Extensions must be strings or iterables of "
-                    "strings.")
+            raise TypeError("Extensions must be iterables of strings.")
 
-    def unregister(self, cls, also=None, only=None):
+    def unregister(self, cls, keep=None, discard=None):
         """Disassociate :param:`cls` from image file extensions.
 
         :param:cls:
@@ -151,79 +150,62 @@ class _Registry(dict):
             `Format Interface`<_format_interface>. If :param:`also` and
             :param:`only` are both ``None``, :param:`cls` will be entirely
             removed from the registry.
-        
-        :param:also:
-            A string or iterable of strings that will be used **in addition**
-            to those found on :param:`cls`.
 
-        :param:only:
-            A string or iterable of strings that will be used **instead of**
-            those found on :param:`cls`.
+        :param:keep:
+            An iterable of strings containing the names of extensions
+            to keep associated with the :param:`cls`.
+
+        :param:discard:
+            An iterable of strings containing the names of extensions
+            to keep associated with the :param:`cls`.
 
         :rtype: None
 
         :raises: TypeError if extensions is not a string or iterable of
             strings and neither is :attr:`cls.extensions`.
         :raises: AttributeError if :param:`only` is None and :param:`cls`
-            lacks a propert `extensions` attribute.
+            lacks a proper `extensions` attribute.
         """
-        if also is None and only is None:
-            to_remove = set()
-            for k, v in self.items():
-                if v is cls:
-                    to_remove.add(k)
-            for k in to_remove:
-                del self[k]
+        if discard:
+            to_remove = set(discard)
         else:
-            extensions = self._get_extensions(cls, also, only)
+            to_remove = {
+                ext for ext, registrant in self.items() if registrant is cls}
+            if keep:
+                to_remove -= set(keep)
+        for ext in to_remove:
+            self.pop(ext, None)
 
-            if all(isinstance(ext, str) for ext in extensions):
-                for ext in extensions:
-                    self.pop(ext, None)
-            else:
-                raise TypeError("Extensions must be passed on the class to be "
-                                "unregistered or as an explicit string or "
-                                "tuple of strings.")
+    def _get_extensions(self, cls, also, only):
+        """Determine the extensions to use from the registration arguments.
+        """
+        if also is not None and only is not None:
+            warnings.warn("`also` and `only` should not be used together. "
+                          "`also` is ignored if `only` is not None.")
+        if only is not None:
+            extensions = set(only)
+        else:
+            try:
+                extensions = set(cls.extensions)
+            except AttributeError:
+                raise TypeError(
+                        "Image formats must have an `extensions` attribute "
+                        "that is an iterable of strings composed of all file "
+                        "extensions to be associated with the format.")
+            if also:
+                extensions |= set(also)
+        return self._trim_extensions(extensions)
 
     def _trim_extensions(self, extensions):
         """Strip off white space and leading dots from file extension strings.
 
         """
         trimmed = set()
-        for ext in set(extensions):
-            ext = re.sub(r'^(?:\.*)([A-Za-z0-9_]*)$', lambda m: m.group(1),
-                    ext.strip())
+        for ext in extensions:
+            ext = re.sub(r'^\.?([A-Za-z0-9_]*)$', lambda m: m.group(1),
+                         ext.strip())
             trimmed.add(ext)
         return trimmed
-
-    def _get_extensions(self, cls, also, only):
-        """Determine the extensions to use from the registration arguments.
-
-        """
-        # FIXME: use util.string_type
-        if only is not None:
-            if isinstance(only, str):
-                return self._trim_extensions((only,))
-            else:
-                return self._trim_extensions(only)
-        else:
-            try:
-                if isinstance(cls.extensions, str):
-                    cls_extensions = (cls.extensions,)
-                else:
-                    cls_extensions = tuple(cls.extensions)
-            except AttributeError as err:
-                err.message = "Image formats must have an `extensions` "\
-                        "attribute that is a string or list of strings "\
-                        "composed of all file extensions to be associated "\
-                        "with the format."
-                raise err
-            if also is None:
-                return self._trim_extensions(cls_extensions)
-            elif isinstance(also, str):
-                return self._trim_extensions(cls_extensions + (also,))
-            else:
-                return self._trim_extensions(cls_extensions + tuple(also))
 
 
 registry = _Registry()
@@ -231,7 +213,7 @@ register = registry.register
 unregister = registry.unregister
 
 
-class FormatMeta(ABCMeta):
+class FormatMeta(abc.ABCMeta):
     """Metaclass for image formats.  Registers the format with
     :data:`.registry`, a mapping of file extensions to formats.
 
@@ -261,7 +243,6 @@ class FormatMeta(ABCMeta):
 #        make it much simpler to attempt to deal with files coming in off
 #        sockets, for example.
 
-
 #py27
 class FormatBase(object):
 #/py27
@@ -290,7 +271,7 @@ class FormatBase(object):
         self.config = self.update_config(**options)
 
     def update_config(self, **options):
-        config = self.defaults.copy()
+        config = copy.deepcopy(self.defaults)
         config.update(options)
         return config
 
@@ -319,7 +300,7 @@ class FormatBase(object):
             self.fp = source
         return self.read()
 
-    @abstractmethod
+    @abc.abstractmethod
     def read(self):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "read"))
@@ -344,7 +325,7 @@ class FormatBase(object):
             self.fp = destination
         self.write()
 
-    @abstractmethod
+    @abc.abstractmethod
     def write(self):
         raise NotImplementedError("{}.{} is not yet implemented".format(
                                   self.__class__.__name__, "write"))
