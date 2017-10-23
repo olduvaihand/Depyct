@@ -6,11 +6,22 @@
 """
 
 """
+import os
 import unittest
 
 
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 class DepyctUnitTest(unittest.TestCase):
-    pass
+
+    def read_data(self, path):
+        with open(self.get_data_path(path), 'rb') as f:
+            return f.read()
+
+    def get_data_path(self, path):
+        return os.path.join(
+                _DIR, os.pardir, os.pardir, os.pardir, 'test', 'data', path)
 
 
 def main():

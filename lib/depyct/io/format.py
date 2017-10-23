@@ -295,7 +295,13 @@ class FormatBase(metaclass=FormatMeta):
             self.fp = open(source, "rb")
         else:
             self.fp = source
-        return self.read()
+
+        im = self.read()
+
+        if not self.fp.closed:
+            self.fp.close()
+
+        return im
 
     @abc.abstractmethod
     def read(self):

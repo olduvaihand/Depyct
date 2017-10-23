@@ -46,7 +46,7 @@ class NetpbmFormat(format.FormatBase):
 
 
     def read(self):
-        m = self._header_re.match(fp.read(512))
+        m = self._header_re.match(self.fp.read(512))
         if m is None:
             raise IOError("not a valid {}")
         self.fp.seek(m.end())
@@ -69,7 +69,7 @@ class NetpbmFormat(format.FormatBase):
                     map(self.scale, p[:self.mode.components]))
         else:
             self.mode = mode.L
-        im = image_cls(self.mode, size=self.size)
+        im = self.image_cls(self.mode, size=self.size)
         try:
             data = getattr(self,
                            "_read_{}".format(self._format[magic_number]))()
@@ -81,7 +81,7 @@ class NetpbmFormat(format.FormatBase):
     def write(self):
         fmt = self.config["format"]
         magic_number = self._magic_number.get(fmt)
-        header_format = b"{}\n{} {}\n"
+        header_format = b"%b\n%d %d\n"
         header = (magic_number,) + self.image.size
         if magic_number not in (b"P1", b"P4"):
             max = 2**self.image.mode.bits_per_component - 1
@@ -95,9 +95,9 @@ class NetpbmFormat(format.FormatBase):
                 self.scale_pixel = lambda p: tuple(map(self.scale, p[:1]))
             else:
                 self.scale_pixel = lambda p: tuple(map(self.scale, p[:3]))
-            header_format += b"{}\n"
+            header_format += b"%d\n"
             header += (maxval,)
-        self.fp.write(header_format.format(*header))
+        self.fp.write(header_format % header)
         try:
             # have all the info and the fp attached to the format
             data = getattr(self, "_write_{}".format(fmt))()
@@ -146,7 +146,7 @@ class PBMFormat(NetpbmFormat):
     def _read_plain(self):
         data = []
         for i, line in enumerate(self.fp): # assert 1
-            line_data = [(255 if b == "1" else 0,) for b in line.split()] # assert 2
+            line_data = [(255 if b == b"1" else 0,) for b in line.split()] # assert 2
             data.append(line_data)
         return data # assert 3
 
@@ -166,10 +166,12 @@ class PBMFormat(NetpbmFormat):
 
     def _write_plain(self):
         clip = self.config["clip"]
+        row_template = b" ".join((b"%d",) * self.image.size.width)
         height = self.image.size.height
         for i, line in enumerate(self.image, 1):
-            self.fp.write(b" ".join(bytes(int(clip(p.value, self.image)))
-                     for p in line))
+            row = row_template % tuple(
+                    int(clip(p.value, self.image)) for p in line)
+            self.fp.write(row)
             if i != height:
                 self.fp.write(b"\n")
 
@@ -326,8 +328,8 @@ class PNMFormat(NetpbmFormat):
     defaults = {}
     messages = {}
 
-    def read(self, image_cls, fp, **options):
-        magic_number = fp.read(2)
+    def read(self):
+        magic_number = self.fp.read(2)
         try:
             ext = {"P1": "pbm", "P4": "pbm",
                    "P2": "pgm", "P5": "pgm",
@@ -339,10 +341,10 @@ class PNMFormat(NetpbmFormat):
                           "raw pbm, pgm, or ppm, respectively.".format(
                               magic_number))
         fmt = registry[ext](**self.config)
-        fp.seek(0)
+        self.fp.seek(0)
         return fmt.read(image_cls, fp, **options)
 
-    def write(self, image, fp, **options):
+    def write(self):
         # FIXME: come up with a consistent way to update options
         write_options = self.update_config(**options)
         ext = write_options.get("ext",

@@ -103,9 +103,9 @@ class ImageMixin(object):
     def map(self, *filters, **named_filters):
         """Apply one or more channel filters to the image.  Each filter should
         be a function taking a single argument, and filters should be given
-        in the same order as the channels in the image.  
-       
-        If only one filter is provided, the filter will be applied to all 
+        in the same order as the channels in the image.
+
+        If only one filter is provided, the filter will be applied to all
         channels.
 
         If the number of filters provided is greater than one but less than
@@ -117,9 +117,9 @@ class ImageMixin(object):
         To zero out the green channel of an RGB image, you could:
 
             im.map(lambda r: r, lambda g: 0)
-            # which is equivalent to 
+            # which is equivalent to
             im.map(lambda r: r, lambda g: 0, lambda b: b)
-        
+
         map(function[, function...]) -> None
 
         """
@@ -154,7 +154,7 @@ class ImageMixin(object):
 
     def rotate90(self):
         """Return a new copy of the image rotated 90 degrees clockwise.
-        
+
         """
         new_height, new_width = self.size
         if self.planar:
@@ -169,17 +169,17 @@ class ImageMixin(object):
 
     def rotate180(self):
         """Return a new copy of the image rotated 180 degrees clockwise.
-        
+
         """
         if self.planar:
             raise NotImplementedError("rotate180() is not implemented for "
                                       "planar images.")
         else:
             return self[::-1, ::-1]
-        
+
     def rotate270(self):
         """Return a new copy of the image rotated 270 degrees clockwise.
-        
+
         """
         new_height, new_width = self.size
         if self.planar:
@@ -278,7 +278,7 @@ class ImageMixin(object):
         if len(key) == 2 and all(isinstance(i, (int, long, slice)) for i in key):
             # pixel (int, int)
             # horizontal image (slice, int)
-            # FIXME: let's see if we can do this without calling into 
+            # FIXME: let's see if we can do this without calling into
             #        __getitem__ again
             if isinstance(key[1], (int, long)):
                 return self[key[1]][key[0]]
@@ -353,14 +353,14 @@ class ImageMixin(object):
                 # if we do, calculate the width of a line
                 #    1 if key[0] isinstance int,
                 #    len(range(key[0].indices(self.size.width))) if key[0] isinstance slice
-                assert height == len(value)
+                assert height == len(value), '{} == len({})'.format(height, value)
                 for line, values in zip(self.lines[key[1]], value):
                     line[pixel_idx] = values
         else:
             raise TypeError("Image indices must be int, slice, or a "
                             "2-tuple composed of ints, slices, or both.")
 
-            
+
 class Image(ImageMixin):
     """
     :attr:`mode`
@@ -371,7 +371,7 @@ class Image(ImageMixin):
 
     :attr:`buffer`
         A sequence of bytes.
-    
+
     :attr:`info`
         A dict object that can contain arbitrary metadata associated with the
         image.
@@ -382,22 +382,22 @@ class Image(ImageMixin):
         ``mode`` must be one of the constants in the ``MODES`` set,
 
         ``size`` is a sequence of two integers (width and height of the new image);
-        
+
         ``color`` is a sequence of integers, one for each
         component of the image, used to initialize all the pixels to the
         same value;
-        
+
         ``source`` can be a sequence of integers of the appropriate size and format
         that is copied as-is in the buffer of the new image or an existing image;
-        
+
         in Python 2.x ``source`` can also be an instance of ``str`` and is interpreted
         as a sequence of bytes.
-        
+
         ``color`` and ``source`` are mutually exclusive and if
         they are both omitted the image is initialized to transparent
         black (all the bytes in the buffer have value 16 in the ``YV12``
-        mode, 255 in the ``CMYK*`` modes and 0 for everything else). 
-        
+        mode, 255 in the ``CMYK*`` modes and 0 for everything else).
+
         If ``source`` is present and is an image, ``mode`` and/or ``size``
         can be omitted; if they are specified and are different from the
         source mode and/or size, the source image is converted.
@@ -438,7 +438,7 @@ class Image(ImageMixin):
                     # deal with converting color
                     pass
             else:
-                # source had better be an iterable that we can stuff 
+                # source had better be an iterable that we can stuff
                 # into a buffer
                 # python2 supports a byte string
                 if util.py27 and isinstance(source, str):

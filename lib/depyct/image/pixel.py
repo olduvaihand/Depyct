@@ -45,7 +45,10 @@ class Pixel(ctypes.Structure):
 
     @value.setter
     def value(self, value):
-        value = list(value)
+        try:
+            value = tuple(value)
+        except TypeError:
+            value = (value,)
         if len(value) != self.mode.components:
             raise ValueError
         self[:] = value
@@ -66,8 +69,9 @@ class Pixel(ctypes.Structure):
             if key >= self.mode.components:
                 raise IndexError("Component index is out of range.")
             setattr(self, self._fields_[key][0], value)
-        [setattr(self, c[0], value[i])
-                for i, c in enumerate(self._fields_[key])]
+        else:
+            for i, c in enumerate(self._fields_[key]):
+                setattr(self, c[0], value[i])
 
 
 def pixel_maker(mode):
