@@ -1,10 +1,10 @@
 # depyct/io/plugins/netpbm.py
-from itertools import chain
+import itertools
 import re
 import struct
 
-from depyct.io.format import FormatBase, registry
-from depyct.image.mode import L, L16, RGB, RGB48
+from depyct.io import format
+from depyct.image import mode
 from depyct import util
 
 
@@ -32,12 +32,11 @@ def pack_bits(iterable, endianess="big"):
             yield bit
 
 def group(iterable, chunksize):
-    from itertools import izip
     args = [iter(iterable)] * chunksize
-    return izip(*args)
+    return itertools.izip(*args)
 
 
-class NetpbmFormat(FormatBase):
+class NetpbmFormat(format.FormatBase):
     """Base file format plugin for Netpbm images
     ============================================
 
@@ -57,19 +56,19 @@ class NetpbmFormat(FormatBase):
             self.maxval = maxval = int(m.group("maxval"))
             if maxval < 256:
                 if magic_number in (b"P3", b"P6"):
-                    mode = RGB
+                    self.mode = mode.RGB
                 else:
-                    mode = L
+                    self.mode = mode.L
             elif magic_number in (b"P3", b"P6"):
-                mode = RGB48
+                self.mode = mode.RGB48
             else:
-                mode = L16
-            bit_depth = mode.bits_per_component
+                self.mode = mode.L16
+            bit_depth = self.mode.bits_per_component
             self.scale = lambda i: int(float(i)*((2**bit_depth) - 1) / maxval)
-            self.scale_pixel = lambda p: tuple(map(self.scale, p[:mode.components]))
+            self.scale_pixel = lambda p: tuple(
+                    map(self.scale, p[:self.mode.components]))
         else:
-            mode = L
-        self.mode = mode
+            self.mode = mode.L
         im = image_cls(self.mode, size=self.size)
         try:
             data = getattr(self,
@@ -80,8 +79,8 @@ class NetpbmFormat(FormatBase):
         return im
 
     def write(self):
-        format = self.config["format"]
-        magic_number = self._magic_number.get(format)
+        fmt = self.config["format"]
+        magic_number = self._magic_number.get(fmt)
         header_format = b"{}\n{} {}\n"
         header = (magic_number,) + self.image.size
         if magic_number not in (b"P1", b"P4"):
@@ -101,19 +100,19 @@ class NetpbmFormat(FormatBase):
         self.fp.write(header_format.format(*header))
         try:
             # have all the info and the fp attached to the format
-            data = getattr(self, "_write_{}".format(format))()
+            data = getattr(self, "_write_{}".format(fmt))()
         except AssertionError as err:
             raise IOError(err.message)
 
 
-_netpbm_header = (br"^(?P<magic_number>P[{}])\n\s*"
+_netpbm_header = (br"^(?P<magic_number>P[%b])\n\s*"
                   br"(?:(?:#.*?)\n\s*)??"
                   br"(?P<width>\d+)\s+"
                   br"(?:(?:#.*?)\n\s*)??"
                   br"(?P<height>\d+)\s+")
 _netpbm_maxval = br"(?:(?:#.*?)\n\s*)??(?P<maxval>\d+)\s+(?:(?:#.*?)\n\s*)??"
 
-PPM_HEADER_RE = re.compile(_netpbm_header.format(br"36") + _netpbm_maxval)
+PPM_HEADER_RE = re.compile(_netpbm_header % (br"36",) + _netpbm_maxval)
 
 
 class PBMFormat(NetpbmFormat):
@@ -184,7 +183,7 @@ class PBMFormat(NetpbmFormat):
             self.fp.write(struct.pack(">{}B".format(bytes_per_line),
                      *pack_bits(clip(p.value, self.image) for p in line)))
 
-    _header_re = re.compile(_netpbm_header.format(br"14"))
+    _header_re = re.compile(_netpbm_header % (br"14",))
     _format = {b"P1": "plain", b"P4": "raw"}
     _magic_number = {"plain": b"P1", "raw": b"P4"}
 
@@ -247,7 +246,7 @@ class PGMFormat(NetpbmFormat):
             self.fp.write(struct.pack(struct_format, *[scale(p.l)
                 for p in line]))
 
-    _header_re = re.compile(_netpbm_header.format(br"25") + _netpbm_maxval)
+    _header_re = re.compile(_netpbm_header % (br"25",) + _netpbm_maxval)
     _format = {b"P2": "plain", b"P5": "raw"}
     _magic_number = {"plain": b"P2", "raw": b"P5"}
 
@@ -311,7 +310,7 @@ class PPMFormat(NetpbmFormat):
                 print(len(data))
                 raise
 
-    _header_re = re.compile(_netpbm_header.format(br"36") + _netpbm_maxval)
+    _header_re = re.compile(_netpbm_header % (br"36",) + _netpbm_maxval)
     _format = {b"P3": "plain", b"P6": "raw"}
     _magic_number = {"plain": b"P3", "raw": b"P6"}
 
@@ -339,18 +338,17 @@ class PNMFormat(NetpbmFormat):
                           "pgm, or ppm, respectively, or P4, P5, or P6 for "
                           "raw pbm, pgm, or ppm, respectively.".format(
                               magic_number))
-        format = registry[ext](**self.config)
+        fmt = registry[ext](**self.config)
         fp.seek(0)
-        return format.read(image_cls, fp, **options)
+        return fmt.read(image_cls, fp, **options)
 
     def write(self, image, fp, **options):
         # FIXME: come up with a consistent way to update options
-        write_options = self.config.copy()
-        write_options.update(**options)
+        write_options = self.update_config(**options)
         ext = write_options.get("ext",
                                 {1: "pgm", 3: "ppm"}.get(image.components))
-        format = registry[ext](**write_options)
-        return format.write(image, fp)
+        fmt = registry[ext](**write_options)
+        return fmt.write(image, fp)
 
 
 class PAMFormat(NetpbmFormat):
@@ -365,8 +363,8 @@ class PAMFormat(NetpbmFormat):
     def _open(self, image_cls, fp, **options):
         magic_number = fp.read(2)
         if magic_number != b"P7":
-            format = PNMFormat(**self.config)
-            return format.open(image_cls, filename, **options)
+            fmt = PNMFormat(**self.config)
+            return fmt.open(image_cls, filename, **options)
         """
         headers = defaultdict.fromkeys(list)
         for line in fp:

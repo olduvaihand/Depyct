@@ -3,8 +3,7 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
-import unittest
-
+from depyct import testing
 from depyct.io import format
 
 
@@ -12,7 +11,7 @@ class Registrant:
     extensions = ('x',)
 
 
-class RegistryTest(unittest.TestCase):
+class RegistryTest(testing.DepyctUnitTest):
 
     def setUp(self):
         self.registry = format._Registry()
@@ -97,4 +96,4 @@ class RegistryTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    testing.main()

@@ -229,10 +229,7 @@ class FormatMeta(abc.ABCMeta):
         attrs["defaults"] = defaults
         cls = super(FormatMeta, cls).__new__(cls, name, bases, attrs)
         if parents:
-            if isinstance(cls.extensions, str):
-                register(cls, only=(cls.extensions,))
-            else:
-                register(cls)
+            register(cls)
         return cls
 
 
@@ -244,10 +241,10 @@ class FormatMeta(abc.ABCMeta):
 #        sockets, for example.
 
 #py27
-class FormatBase(object):
+#class FormatBase(object):
 #/py27
 #py3k
-#class FormatBase(metaclass=FormatMeta):
+class FormatBase(metaclass=FormatMeta):
 #/py3k
     """An abstract base class for image formats.
 
@@ -288,7 +285,7 @@ class FormatBase(object):
             raise IOError(message)
 
     def open(self, source):
-        """Load an image from `file` and return it.
+        """Load an image from `source` and return it.
 
         :param source: string filename or object supporting file protocol
         :rtype: :class:`~depyct.image.ImageMixin`

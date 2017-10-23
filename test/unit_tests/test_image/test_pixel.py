@@ -6,14 +6,14 @@
 from array import array
 
 from depyct.image.mode import *
-from depyct.testing import DepyctUnitTest
+from depyct import testing
 from depyct import util
 import ctypes
 
-class PixelTest(DepyctUnitTest):
+class PixelTest(testing.DepyctUnitTest):
 
     @classmethod
-    def setupClass(cls):
+    def setUpClass(cls):
         cls.pixels = {}
         for mode in MODES:
             buffer = util.initialize_buffer(mode, (1, 1))
@@ -22,12 +22,12 @@ class PixelTest(DepyctUnitTest):
     def test_component_properties(self):
         for mode, pixel in self.pixels.items():
             for component in mode.component_names:
-                self.assertTrue(hasattr(pixel, component), 
+                self.assertTrue(hasattr(pixel, component),
                         "Pixel classes should provide component access.")
 
     def test___iter__(self):
         for mode, pixel in self.pixels.items():
-            self.assertEqual(mode.transparent_color, tuple(pixel), 
+            self.assertEqual(mode.transparent_color, tuple(pixel),
                     "Pixel.__iter__() yields the elements of the pixel.")
 
     def test___getitem__with_int(self):
@@ -72,17 +72,21 @@ class PixelTest(DepyctUnitTest):
             pass
 
 
-class ComponentPropertyTest(DepyctUnitTest):
+class ComponentPropertyTest(testing.DepyctUnitTest):
     pass
 
 
-class PixelValuePropertyTest(DepyctUnitTest):
+class PixelValuePropertyTest(testing.DepyctUnitTest):
     pass
 
 
-class StructPixelValuePropertyTest(DepyctUnitTest):
+class StructPixelValuePropertyTest(testing.DepyctUnitTest):
     pass
 
 
-class PixelMakerTest(DepyctUnitTest):
+class PixelMakerTest(testing.DepyctUnitTest):
     pass
+
+
+if __name__ == "__main__":
+    testing.main()

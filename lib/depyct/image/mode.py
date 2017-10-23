@@ -6,12 +6,13 @@
 """
 
 """
+import functools
 import operator
 
 
 class ImageMode(str):
     """The :class:`Mode` objects offer a number of attributes and methods
-    that can be used for implementing generic algorithms that work on 
+    that can be used for implementing generic algorithms that work on
     different types of images.
 
     :attr:`.components`
@@ -117,12 +118,12 @@ class ImageMode(str):
                         for sub_x, sub_y in self.subsampling
                 ]) // 8
         else:
-            return reduce(operator.mul, dims)*self.bytes_per_pixel
+            return functools.reduce(operator.mul, dims) * self.bytes_per_pixel
 
     @classmethod
     def _finalize_modes(cls):
         """Link modes to their module-level names for string comparison.
-        
+
         Once all :class:`ImageMode` s have been instantiated, they must be
         assigned ``str`` values to produce the proper comparison behavior.
         This pulls each :class:`ImageMode` instance out of ``globals()``,
@@ -141,7 +142,7 @@ class ImageMode(str):
                 cls._create_pixel_cls(mode)
                 globals()[name] = mode
         return modes
-                
+
 
 L = ImageMode("l")
 L16 = ImageMode("l", 16)
@@ -184,5 +185,5 @@ CMYK64 = ImageMode("cmyk", 16, transparent_color=(65535,)*4)
 
 MODES = ImageMode._finalize_modes()
 
-__all__ = ["MODES"] + [name for name, value in globals().items() 
+__all__ = ["MODES"] + [name for name, value in globals().items()
                        if isinstance(value, ImageMode)]

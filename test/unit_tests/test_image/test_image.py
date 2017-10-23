@@ -3,14 +3,14 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
-from depyct.testing import DepyctUnitTest
+from depyct import testing
 from depyct.image import Image
 from depyct.image.line import Line
 from depyct.image.pixel import Pixel
 from depyct.image.mode import RGB, YV12
 
 
-class NonPlanarImageTest(DepyctUnitTest):
+class NonPlanarImageTest(testing.DepyctUnitTest):
 
     def setUp(self):
         width, height = 2, 3
@@ -163,7 +163,7 @@ class NonPlanarImageTest(DepyctUnitTest):
         pass
 
 
-class PlanarImageTest(DepyctUnitTest):
+class PlanarImageTest(testing.DepyctUnitTest):
 
     def setUp(self):
         self.im = Image(YV12, size=(2, 2))
@@ -240,3 +240,7 @@ class PlanarImageTest(DepyctUnitTest):
             self.im[0:1] = 1
         with self.assertRaises(TypeError):
             self.im[0:1,0:1] = 1
+
+
+if __name__ == "__main__":
+    testing.main()

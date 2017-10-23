@@ -3,9 +3,13 @@
 #
 # This module is part of Depyct and is released under the MIT License:
 # http://www.opensource.org/licenses/mit-license.php
-from depyct.testing import DepyctUnitTest
+from depyct import testing
 
 
-class LineTest(DepyctUnitTest):
+class LineTest(testing.DepyctUnitTest):
 
     pass
+
+
+if __name__ == "__main__":
+    testing.main()

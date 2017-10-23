@@ -6,8 +6,12 @@
 """
 
 """
-from unittest import TestCase
+import unittest
 
 
-class DepyctUnitTest(TestCase):
+class DepyctUnitTest(unittest.TestCase):
     pass
+
+
+def main():
+    unittest.main()
