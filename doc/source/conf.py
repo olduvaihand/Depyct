@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Depyct'
-copyright = u'2012, Ben Trofatter'
+copyright = u'2012-2017, Ben Trofatter'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -248,7 +248,7 @@ texinfo_documents = [
 epub_title = u'Depyct'
 epub_author = u'Ben Trofatter'
 epub_publisher = u'Ben Trofatter'
-epub_copyright = u'2012, Ben Trofatter'
+epub_copyright = u'2012-2017, Ben Trofatter'
 
 # The language of the text. It defaults to the language option
 # or en if the language is not set.
