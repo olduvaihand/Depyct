@@ -1,0 +1,14 @@
+P7
+# height, width, depth, and maxval must be >= 1
+HEIGHT 7
+WIDTH 23
+# depth is 1 for bitmap and grayscale, 2 for bitmap and grayscale with alpha
+#   3 for rgb, and 4 for rgba
+DEPTH 3
+MAXVAL 15
+# you can have zero or more TUPLTYPE headers, the ultimate result being a spaced
+#  delimited list of concatenated tokens
+#TUPLTYPE BLACKANDWHITE|GRAYSCALE|RGB[_ALPHA]
+# other headers are allowed.  they must be up to 8 characters in ascii
+# and  
+ENDHDR

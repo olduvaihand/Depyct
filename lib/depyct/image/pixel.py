@@ -50,7 +50,8 @@ class Pixel(ctypes.Structure):
         except TypeError:
             value = (value,)
         if len(value) != self.mode.components:
-            raise ValueError
+            raise ValueError("{} should have {} components".format(
+                value, self.mode.components))
         self[:] = value
 
     def __getitem__(self, key):
