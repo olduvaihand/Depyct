@@ -1,9 +1,11 @@
 # depyct/io/plugins/netpbm.py
+import enum
 import itertools
 import re
 import struct
 
 from depyct.io import format
+from depyct import image
 from depyct.image import mode
 from depyct import util
 
@@ -38,6 +40,193 @@ def group(iterable, chunksize):
 
 def affine(a, i, I, o, O):
     return int(O - float((I - a)*(O - o))/(I - i))
+
+
+
+class PnmHeader:
+
+    def __init__(self, fp):
+        self._fp = fp
+        self._magic_number = None
+        self._width = None
+        self._height = None
+        self._maxval = None
+        self.comments = []
+        self.headers = {}
+        self._last_line = None
+        self._parse()
+
+    def _parse(self):
+        self._read_magic_number()
+        if self.magic_number is MagicNumber.PAM:
+            self._read_pam_header()
+        else:
+            self._read_pnm_comments()
+            self._read_pnm_width()
+            self._read_pnm_comments()
+            self._read_pnm_height()
+            self._read_pnm_comments()
+            self._read_pnm_maxval()
+            self._read_pnm_comments()
+
+    @property
+    def magic_number(self):
+        return MagicNumber.from_string(self._magic_number)
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @property
+    def size(self):
+        return image.ImageSize(self._width, self._height)
+
+    def _read_magic_number(self):
+        self._magic_number = self._fp.read(2)
+
+    def _read_pam_header(self):
+        required_headers = {b"WIDTH", b"HEIGHT", b"DEPTH", b"MAXVAL"}
+        for line in self.fp:
+            line = line.strip()
+            if not line:
+                continue
+            elif line.startswith(b"#"):
+                self.comments.append(line)
+                continue
+            elif line == b"ENDHDR":
+                break
+            name, value = line.split(None, 1)
+            self._handle_pam_header(name, value)
+
+        self._get_pam_mode()
+        self._read_pam_data()
+
+    def _handle_pam_header(self, name, value):
+        if name == b"WIDTH":
+            self.required_headers.remove(name)
+            self._width = int(token)
+        elif name == b"HEIGHT":
+            self.required_headers.remove(name)
+            self._height = int(token)
+        elif name == b"DEPTH":
+            self.required_headers.remove(name)
+            self._depth = int(token)
+        elif name == b"MAXVAL":
+            self.required_headers.remove(name)
+            self._maxval = int(token)
+        elif name == b"TULTYPE":
+            self._headers.setdefault(header, []).append(token)
+        else:
+            self._headers[header] = token
+
+
+    def _get_pam_mode(self):
+        if self._maxval < 2**8:
+            bytes_per_component = 
+
+    def _read_pnm_comments(self)
+        while True:
+            self._last_line = self._fp.readline().strip()
+            if not self._last_line:
+                continue
+            if not self._last_line.startswith(b"#"):
+                return
+            self.comments.append(self._last_line)
+
+    def _read_pnm_width(self):
+        self._width = self._read_pnm_header_field()
+
+    def _read_pnm_height(self):
+        self._height = self._read_pnm_header_field()
+
+    def _read_pnm_maxval(self):
+        self._maxval = self._read_pnm_header_field()
+
+    def _read_pnm_header_field(self):
+        tokens = [t.strip() for t in self._last_line.split(n'#')]
+        value = int(tokens[0])
+        if len(tokens) > 1:
+            self.comments.extend(tokens[1:])
+        return value
+
+
+class MagicNumber(enum.Enum):
+
+    PLAIN_PBM = b"P1"
+    PLAIN_PGM = b"P2"
+    PLAIN_PPM = b"P3"
+    RAW_PBM = b"P4"
+    RAW_PGM = b"P5"
+    RAW_PPM = b"P6"
+    PAM = b"P7"
+
+    @classmethod
+    def from_string(cls, s):
+        try:
+            return {v, e for e, v in cls.__members__.items()}[s]
+        except KeyError:
+            raise ValueError("{} is not a valid NetPBM magic number".format(s))
+
+
+class PamFormat(format.FormatBase):
+
+    defaults = {"format": "raw"}
+
+    def read(self):
+        self._header = PamHeader(self.fp)
+
+        im = self.image_cls(self._header.mode, size=self._header.size)
+
+        im[:] = {
+                MagicNumber.PLAIN_PBM: self._read_plain_pnm,
+                MagicNumber.PLAIN_PGM: self._read_plain_pnm,
+                MagicNumber.PLAIN_PPM: self._read_plain_pnm,
+                MagicNumber.RAW_PBM: self._read_raw_pbm,
+                MagicNumber.RAW_PGM: self._read_raw_pnm,
+                MagicNumber.RAW_PPM: self._read_raw_pnm,
+        }[self._header.magic_number]()
+
+        return im
+
+    def _read_plain_pnm(self):
+        data = []
+        for line in self.fp:
+            data.append([tuple(int(c) for c in p)
+                for p in group(line.split(), self._header.mode.components)])
+        return data
+
+    def _read_raw_pbm(self):
+        data = []
+        width, _ = self._header.size
+        chunksize, padded = divmod(width, 8)
+        if padded:
+            chunksize += 1
+        while True:
+            chunk = self.fp.read(chunksize)
+            if not chunk:
+                break
+            line_data = unpack_bits(chunk)[:width]
+            data.append(chunk_data)
+        return data
+
+    def _read_raw_pnm(self):
+        data = []
+        components = self._header.mode.components
+        bpc = self._header.mode.bits_per_component // 8
+        width, _ = self._header.size
+        struct_format = ">{}{}".format(
+            width * components, "B" if bpc == 1 else "H")
+        chunksize = width * components * bpc
+        while True:
+            chunk = self.fp.read(chunksize)
+            if not chunk:
+                break
+            line_data = [p for p in group(
+                struct.unpack(struct_format, chunk), components)]
+            data.append(line_data)
+        return data
+
+
 
 
 class NetpbmFormat(format.FormatBase):
@@ -126,7 +315,7 @@ class PbmFormat(NetpbmFormat):
     extensions = ("pbm",)
     mimetypes = ("image/x-portable-bitmap",)
     defaults = {
-        "clip": lambda c, image: c != image.mode.transparent_color,
+        "clip": lambda c, im: c != im.mode.transparent_color,
     }
     messages = {
         "bad_line_data":
@@ -367,30 +556,75 @@ class PamFormat(NetpbmFormat):
     """
 
     extensions = ("pam",)
-    mimetypes = ("image/x-portable-anymap",)
+    mimetypes = ("image/x-portable-arbitrarymap",)
 
-    def _open(self, image_cls, fp, **options):
-        magic_number = fp.read(2)
+    REQUIRED_HEADERS = {b"HEIGHT", b"WIDTH", b"DEPTH", b"MAXVAL"}
+
+    def read(self):
+
+        def debug(o):
+            print("DEBUG!")
+            print(o)
+            print("DEBUG!")
+
+        magic_number = self.fp.read(2)
         if magic_number != b"P7":
-            fmt = PNMFormat(**self.config)
-            return fmt.open(image_cls, filename, **options)
-        """
-        headers = defaultdict.fromkeys(list)
-        for line in fp:
-            line = line.strip()
-            header, tokens = line.split(None, 1)
-            headers[header.lower()].append(tokens)
-            if line == "ENDHDR":
-                break
-        for req, coercion in REQUIRED_HEADERS:
-            try:
-                headers[req] = coercion(headers[req])
-            except KeyError:
-                raise IOError("Missing required header {}.".format(req))
-        im = image_cls(headers["tupltype"],
-                       size=(headers["width"], headers["height"]))
-        #read in that data
-        """
+            fmt = PNMFormat(image_cls, **self.config)
+            # FIXME: remove this seek or wrap the fp in a buffered object
+            self.fp.seek(0)
+            return fmt.open(self.fp)
 
-    def _save(self, image, fp, **options):
+        headers = {}
+        for line in self.fp:
+            line = line.strip()
+            if not line or line.startswith(b'#'):
+                continue
+            if line == b"ENDHDR":
+                break
+            header, token = line.split(None, 1)
+            if header == b"TUPLYPE":
+                headers.setdefault(header, []).append(token)
+            elif header in headers:
+                raise ValueError(
+                        "Header includes more than one {} line: {}, {}".format(
+                            header, self.headers[header], token))
+            else:
+                headers[header] = token
+
+        for required in self.REQUIRED_HEADERS:
+            if required not in headers:
+                raise ValueError(
+                        "Required header {} was missing".format(required))
+
+        maxval = int(headers[b"MAXVAL"])
+        if maxval < 2**8:
+            bit_depth = 8
+        elif maxval < 2**16:
+            bit_depth = 16
+        else:
+            raise ValueError("MAXVAL too high: {}".format(maxval))
+        components = int(headers[b"DEPTH"])
+
+        im_mode = {
+            8:  {1: mode.L,   2: mode.LA,    3: mode.RGB,    4: mode.RGBA},
+            16: {1: mode.L16, 2: mode.LA32,  3: mode.RGB48,  4: mode.RGBA64},
+        }[bit_depth][components]
+
+        size = image.ImageSize(int(headers[b"WIDTH"]), int(headers[b"HEIGHT"]))
+        im = self.image_cls(im_mode, size)
+
+        if im_mode == mode.L:
+          debug(im.buffer.tobytes())
+          debug(im.buffer.shape)
+        data = self.fp.read()
+        if im_mode == mode.L:
+          debug(len(data))
+          debug(data)
+        im.buffer[:] = data
+
+        im.map(lambda v: affine(v, 0, maxval, 0, 2**bit_depth - 1))
+
+        return im
+
+    def write(self):
         pass

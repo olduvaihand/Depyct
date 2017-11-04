@@ -52,7 +52,7 @@ class NetpbmTest(testing.DepyctUnitTest):
         return super(NetpbmTest, self).get_data_path(rerooted_path)
 
 
-class PBMFormatTest(NetpbmTest):
+class PbmFormatTest(NetpbmTest):
 
     FORMAT_CLS = netpbm.PbmFormat
 
@@ -90,7 +90,7 @@ class PBMFormatTest(NetpbmTest):
         self.check_write_raw(self.test_im, "out.raw.pbm")
 
 
-class PGMFormatTest(NetpbmTest):
+class PgmFormatTest(NetpbmTest):
 
     FORMAT_CLS = netpbm.PgmFormat
 
@@ -128,7 +128,7 @@ class PGMFormatTest(NetpbmTest):
         self.check_write_raw(self.test_im, "out.raw.pgm", maxval=15)
 
 
-class PPMFormatTest(NetpbmTest):
+class PpmFormatTest(NetpbmTest):
 
     FORMAT_CLS = netpbm.PpmFormat
 
@@ -173,67 +173,81 @@ class PPMFormatTest(NetpbmTest):
         self.check_write_raw(self.test_im, "out.raw.ppm", maxval=15)
 
 
-class PNMFormatTest(NetpbmTest):
+class PnmFormatTest(NetpbmTest):
 
     FORMAT_CLS = netpbm.PnmFormat
 
-    # PBM
+    # Pbm
 
     def test_read_plain_pbm(self):
-        test_im = PBMFormatTest.get_test_image()
+        test_im = PbmFormatTest.get_test_image()
         self.check_read_plain("in.plain-pbm.pnm", test_im)
 
     def test_write_plain_pbm(self):
-        test_im = PBMFormatTest.get_test_image()
+        test_im = PbmFormatTest.get_test_image()
         self.check_write_plain(test_im, "out.plain-pbm.pnm")
 
     def test_read_raw_pbm(self):
-        test_im = PBMFormatTest.get_test_image()
+        test_im = PbmFormatTest.get_test_image()
         self.check_read_raw("in.raw-pbm.pnm", test_im)
 
     def test_write_raw_pbm(self):
-        test_im = PBMFormatTest.get_test_image()
+        test_im = PbmFormatTest.get_test_image()
         self.check_write_raw(test_im, "out.raw-pbm.pnm")
 
-    # PGM
+    # Pgm
 
     def test_read_plain_pgm(self):
-        test_im = PGMFormatTest.get_test_image()
+        test_im = PgmFormatTest.get_test_image()
         self.check_read_plain("in.plain-pgm.pnm", test_im)
 
     def test_write_plain_pgm(self):
-        test_im = PGMFormatTest.get_test_image()
+        test_im = PgmFormatTest.get_test_image()
         self.check_write_plain(test_im, "out.plain-pgm.pnm", maxval=15)
 
     def test_read_raw_pgm(self):
-        test_im = PGMFormatTest.get_test_image()
+        test_im = PgmFormatTest.get_test_image()
         self.check_read_raw("in.raw-pgm.pnm", test_im)
 
     def test_write_raw_pgm(self):
-        test_im = PGMFormatTest.get_test_image()
+        test_im = PgmFormatTest.get_test_image()
         self.check_write_raw(test_im, "out.raw-pgm.pnm", maxval=15)
 
-    # PPM
+    # Ppm
 
     def test_read_plain_ppm(self):
-        test_im = PPMFormatTest.get_test_image()
+        test_im = PpmFormatTest.get_test_image()
         self.check_read_plain("in.plain-ppm.pnm", test_im)
 
     def test_write_plain_ppm(self):
-        test_im = PPMFormatTest.get_test_image()
+        test_im = PpmFormatTest.get_test_image()
         self.check_write_plain(test_im, "out.plain-ppm.pnm", maxval=15)
 
     def test_read_raw_ppm(self):
-        test_im = PPMFormatTest.get_test_image()
+        test_im = PpmFormatTest.get_test_image()
         self.check_read_raw("in.raw-ppm.pnm", test_im)
 
     def test_write_raw_ppm(self):
-        test_im = PPMFormatTest.get_test_image()
+        test_im = PpmFormatTest.get_test_image()
         self.check_write_raw(test_im, "out.raw-ppm.pnm", maxval=15)
 
 
-class PAMFormatTest(testing.DepyctUnitTest):
-    pass
+class PamFormatTest(NetpbmTest):
+
+    FORMAT_CLS = netpbm.PamFormat
+
+    def test_read_pbm(self):
+        test_im = PbmFormatTest.get_test_image()
+        self.check_read({}, "in.pbm.pam", test_im)
+
+    def test_read_pgm(self):
+        test_im = PgmFormatTest.get_test_image()
+        self.check_read({}, "in.pgm.pam", test_im)
+
+    def test_read_ppm(self):
+        test_im = PpmFormatTest.get_test_image()
+        self.check_read({}, "in.ppm.pam", test_im)
+
 
 
 if __name__ == "__main__":

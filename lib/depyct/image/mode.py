@@ -146,7 +146,6 @@ class ImageMode(str):
 
 L = ImageMode("l")
 L16 = ImageMode("l", 16)
-L32 = ImageMode("l", 32)
 LA = ImageMode("la")
 LA32 = ImageMode("la", 16)
 

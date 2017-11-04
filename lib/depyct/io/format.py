@@ -213,6 +213,10 @@ register = registry.register
 unregister = registry.unregister
 
 
+class FormatError(Exception):
+    """Base class for Format errors."""
+
+
 class FormatMeta(abc.ABCMeta):
     """Metaclass for image formats.  Registers the format with
     :data:`.registry`, a mapping of file extensions to formats.
