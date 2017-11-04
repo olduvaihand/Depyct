@@ -42,8 +42,25 @@ def affine(a, i, I, o, O):
     return int(O - float((I - a)*(O - o))/(I - i))
 
 
+class MagicNumber(enum.Enum):
 
-class PnmHeader:
+    PLAIN_PBM = b"P1"
+    PLAIN_PGM = b"P2"
+    PLAIN_PPM = b"P3"
+    RAW_PBM = b"P4"
+    RAW_PGM = b"P5"
+    RAW_PPM = b"P6"
+    PAM = b"P7"
+
+    @classmethod
+    def from_string(cls, s):
+        try:
+            return {v, e for e, v in cls.__members__.items()}[s]
+        except KeyError:
+            raise ValueError("{} is not a valid NetPBM magic number".format(s))
+
+
+class PamHeader:
 
     def __init__(self, fp):
         self._fp = fp
@@ -61,13 +78,7 @@ class PnmHeader:
         if self.magic_number is MagicNumber.PAM:
             self._read_pam_header()
         else:
-            self._read_pnm_comments()
-            self._read_pnm_width()
-            self._read_pnm_comments()
-            self._read_pnm_height()
-            self._read_pnm_comments()
-            self._read_pnm_maxval()
-            self._read_pnm_comments()
+            self._read_pnm_header()
 
     @property
     def magic_number(self):
@@ -97,9 +108,17 @@ class PnmHeader:
                 break
             name, value = line.split(None, 1)
             self._handle_pam_header(name, value)
-
+        self._check_pam_errors()
         self._get_pam_mode()
-        self._read_pam_data()
+
+    def _read_pnm_header(self):
+        self._read_pnm_comments()
+        self._read_pnm_width()
+        self._read_pnm_comments()
+        self._read_pnm_height()
+        self._read_pnm_comments()
+        self._read_pnm_maxval()
+        self._read_pnm_comments()
 
     def _handle_pam_header(self, name, value):
         if name == b"WIDTH":
@@ -119,10 +138,19 @@ class PnmHeader:
         else:
             self._headers[header] = token
 
-
     def _get_pam_mode(self):
-        if self._maxval < 2**8:
-            bytes_per_component = 
+        bytes_per_component = 8 if self._maxval < 2**8 else 16
+        if self._depth = 1:
+            self._mode = mode.L if bytes_per_component == 8 else mode.L16
+        elif self._depth = 2:
+            self._mode = mode.LA if bytes_per_component == 8 else mode.LA32
+        elif self._depth = 3:
+            self._mode = mode.RGB if bytes_per_component == 8 else mode.RGB48
+        elif self._depth = 4:
+            self._mode = mode.RGBA if bytes_per_component == 8 else mode.RGBA64
+        else:
+            raise NotImplementedError(
+                    "Depyct doesn't support images with more than 4 channels")
 
     def _read_pnm_comments(self)
         while True:
@@ -150,24 +178,6 @@ class PnmHeader:
         return value
 
 
-class MagicNumber(enum.Enum):
-
-    PLAIN_PBM = b"P1"
-    PLAIN_PGM = b"P2"
-    PLAIN_PPM = b"P3"
-    RAW_PBM = b"P4"
-    RAW_PGM = b"P5"
-    RAW_PPM = b"P6"
-    PAM = b"P7"
-
-    @classmethod
-    def from_string(cls, s):
-        try:
-            return {v, e for e, v in cls.__members__.items()}[s]
-        except KeyError:
-            raise ValueError("{} is not a valid NetPBM magic number".format(s))
-
-
 class PamFormat(format.FormatBase):
 
     defaults = {"format": "raw"}
@@ -182,8 +192,9 @@ class PamFormat(format.FormatBase):
                 MagicNumber.PLAIN_PGM: self._read_plain_pnm,
                 MagicNumber.PLAIN_PPM: self._read_plain_pnm,
                 MagicNumber.RAW_PBM: self._read_raw_pbm,
-                MagicNumber.RAW_PGM: self._read_raw_pnm,
-                MagicNumber.RAW_PPM: self._read_raw_pnm,
+                MagicNumber.RAW_PGM: self._read_pam,
+                MagicNumber.RAW_PPM: self._read_pam,
+                MagicNumber.PAM: self._read_pam,
         }[self._header.magic_number]()
 
         return im
@@ -209,24 +220,24 @@ class PamFormat(format.FormatBase):
             data.append(chunk_data)
         return data
 
-    def _read_raw_pnm(self):
+    def _read_pam(self):
         data = []
         components = self._header.mode.components
-        bpc = self._header.mode.bits_per_component // 8
+        bpp = self._header.mode.bytes_per_pixel
         width, _ = self._header.size
         struct_format = ">{}{}".format(
-            width * components, "B" if bpc == 1 else "H")
-        chunksize = width * components * bpc
+            width * components, "B" if bpp == 1 else "H")
+        chunksize = width * bpp
         while True:
             chunk = self.fp.read(chunksize)
             if not chunk:
                 break
-            line_data = [p for p in group(
-                struct.unpack(struct_format, chunk), components)]
+            line_data = list(group(
+                struct.unpack(struct_format, chunk), components))
             data.append(line_data)
         return data
 
-
+'''
 
 
 class NetpbmFormat(format.FormatBase):
@@ -628,3 +639,4 @@ class PamFormat(NetpbmFormat):
 
     def write(self):
         pass
+'''
